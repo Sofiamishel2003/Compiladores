@@ -32,11 +32,10 @@ public class Main {
 
         // 2. Construir el AST a partir de la expresión postfija
         ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
+        //ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
         ASTNode root = astBuilder.buildAST();
         astBuilder.computeNullableFirstLast(root);
         astBuilder.computeFollowpos(root);
-
-        //root.print("", false);
 
         // 3. Obtener followpos y la tabla de símbolos
         var followpos = astBuilder.getFollowpos();

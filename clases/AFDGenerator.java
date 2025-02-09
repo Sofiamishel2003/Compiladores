@@ -8,6 +8,7 @@ public class AFDGenerator {
     private Set<Integer> startState;
     private Set<Set<Integer>> states;
     private Map<Set<Integer>, Map<String, Set<Integer>>> transitions;
+    private Set<Integer> deadState;
 
     public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState) {
         this.followpos = followpos;
@@ -15,6 +16,7 @@ public class AFDGenerator {
         this.startState = startState;
         this.states = new HashSet<>();
         this.transitions = new HashMap<>();
+        this.deadState = new HashSet<>();
     }
 
     public void generateAFD() {
@@ -28,10 +30,17 @@ public class AFDGenerator {
 
             for (int position : currentState) {
                 String symbol = symbolTable.get(position);
-                if (symbol == null) continue;
-
-                transitionMap.putIfAbsent(symbol, new HashSet<>());
-                transitionMap.get(symbol).addAll(followpos.get(position));
+                if (symbol == null) {
+                    // If the state has a null symbol, it should transition to the dead state for all symbols
+                    for (String transitionSymbol : symbolTable.values()) {
+                        transitionMap.putIfAbsent(transitionSymbol, new HashSet<>());
+                        transitionMap.get(transitionSymbol).addAll(deadState);  // All transitions go to the dead state
+                    }
+                } else {
+                    // Normal transition for valid symbols
+                    transitionMap.putIfAbsent(symbol, new HashSet<>());
+                    transitionMap.get(symbol).addAll(followpos.get(position));
+                }
             }
 
             transitions.put(currentState, transitionMap);
