@@ -31,8 +31,8 @@ public class Main {
         System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex6));
 
         // 2. Construir el AST a partir de la expresión postfija
-        ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
-        //ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
+        //ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
+        ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
         ASTNode root = astBuilder.buildAST();
         astBuilder.computeNullableFirstLast(root);
         astBuilder.computeFollowpos(root);
@@ -45,9 +45,15 @@ public class Main {
 
         // 4. Generar el AFD
         AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState, acceptingPosition);
-        //afd.generateAFD();
-
+        
         // 5. Imprimir los estados y transiciones del AFD
+        afd.printAFD();
+
+        //6. Generar el AFD minimizado
+        afd.minimizeAFD();
+        
+        //7. Imprimir los estados y transiciones del AFD minimizado
+        System.out.println("\n=== AFD Minimizado ===");
         afd.printAFD();
     }
 }
