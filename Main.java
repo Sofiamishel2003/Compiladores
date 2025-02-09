@@ -1,3 +1,6 @@
+import clases.AFDGenerator;
+import clases.ASTBuilder;
+import clases.ASTNode;
 import clases.RegexConverter;
 
 public class Main {
@@ -26,5 +29,25 @@ public class Main {
 
         System.out.println("\nExpresión infija: " + regex6);
         System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex6));
+
+        // 2. Construir el AST a partir de la expresión postfija
+        ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
+        ASTNode root = astBuilder.buildAST();
+        astBuilder.computeNullableFirstLast(root);
+        astBuilder.computeFollowpos(root);
+
+        //root.print("", false);
+
+        // 3. Obtener followpos y la tabla de símbolos
+        var followpos = astBuilder.getFollowpos();
+        var symbolTable = astBuilder.getSymbolTable();
+        var startState = astBuilder.getStartState(root);
+
+        // 4. Generar el AFD
+        AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState);
+        afd.generateAFD();
+
+        // 5. Imprimir los estados y transiciones del AFD
+        afd.printAFD();
     }
 }

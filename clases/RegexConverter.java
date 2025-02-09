@@ -14,9 +14,12 @@ public class RegexConverter {
     );
 
     public static String toPostfix(String infix) {
+        //infix = "(" + infix + ").";
         List<Symbol> formattedRegex = tokenize(infix);
         StringBuilder postfix = new StringBuilder();
         Stack<Symbol> stack = new Stack<>();
+
+        
 
         for (Symbol symbol : formattedRegex) {
             String value = symbol.getValue();
@@ -42,7 +45,7 @@ public class RegexConverter {
             postfix.append(stack.pop().getValue());
         }
 
-        return postfix.toString().replaceAll("[()^]", ""); // Elimina paréntesis y concatenación implícita incorrecta
+        return postfix.toString().replaceAll("[()]", ""); // Elimina paréntesis y concatenación implícita incorrecta
     }
 
     private static int getPrecedence(String operator) {
