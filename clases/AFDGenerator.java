@@ -11,6 +11,7 @@ public class AFDGenerator {
     private Set<Integer> deadState;
     private Set<Set<Integer>> acceptedStates;
     private Map<Set<Integer>, Integer> stateMapping; 
+    private Map<Set<Integer>, String> stateLabels;
 
     public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState, int acceptingPosition) {
         this.followpos = followpos;
@@ -20,6 +21,7 @@ public class AFDGenerator {
         this.transitions = new HashMap<>();
         this.deadState = new HashSet<>();
         this.acceptedStates = new HashSet<>();
+        this.stateLabels = new HashMap<>();
 
         generateAFD();  // Generate the AFD and populate states and transitions
         markAcceptedStates(acceptingPosition);
@@ -78,109 +80,136 @@ public class AFDGenerator {
 
     /** MINIMIZATION USING HOPCROFT'S ALGORITHM **/
     public void minimizeAFD() {
-        Set<Set<Integer>> partitions = new HashSet<>();
-        Set<Set<Integer>> newPartitions = new HashSet<>();
-
-        Set<Integer> nonAccepting = new HashSet<>();
+        Set<Set<Integer>> acceptingGroup = new HashSet<>();
+        Set<Set<Integer>> nonAcceptingGroup = new HashSet<>();
+        
         for (Set<Integer> state : states) {
-            if (!acceptedStates.contains(state)) {
-                nonAccepting.addAll(state);
+            if (acceptedStates.contains(state)) {
+                acceptingGroup.add(state);
+            } else {
+                nonAcceptingGroup.add(state);
             }
         }
-
-        partitions.add(nonAccepting);
-        partitions.addAll(acceptedStates);
-
+        
+        Set<Set<Set<Integer>>> partitions = new HashSet<>();
+        partitions.add(acceptingGroup);
+        partitions.add(nonAcceptingGroup);
+    
         boolean changed;
         do {
-            newPartitions.clear();
+            Set<Set<Set<Integer>>> newPartitions = new HashSet<>();
             changed = false;
-
-            for (Set<Integer> group : partitions) {
-                Map<Map<String, Set<Integer>>, Set<Integer>> classified = new HashMap<>();
-
-                for (Integer state : group) {
+    
+            for (Set<Set<Integer>> group : partitions) {
+                Map<Map<String, Set<Integer>>, Set<Set<Integer>>> classified = new HashMap<>();
+                for (Set<Integer> state : group) {
                     Map<String, Set<Integer>> transitionMap = new HashMap<>();
+    
                     for (String symbol : symbolTable.values()) {
-                        for (Set<Integer> targetGroup : partitions) {
-                            if (targetGroup.contains(getTransitionState(state, symbol))) {
-                                transitionMap.put(symbol, targetGroup);
-                                break;
+                        Set<Integer> targetState = getTransitionState(state, symbol);
+    
+                        for (Set<Set<Integer>> partition : partitions) {
+                            for (Set<Integer> partitionState : partition) {
+                                if (partitionState.equals(targetState)) {
+                                    transitionMap.put(symbol, partitionState);
+                                    break;
+                                }
                             }
                         }
                     }
-
                     classified.computeIfAbsent(transitionMap, k -> new HashSet<>()).add(state);
                 }
-
+    
                 newPartitions.addAll(classified.values());
                 if (classified.size() > 1) {
                     changed = true;
                 }
             }
-
+    
             partitions = new HashSet<>(newPartitions);
-        } while (changed);
-
+        } while (changed); 
         reconstructMinimizedAFD(partitions);
     }
-
-    private Integer getTransitionState(Integer state, String symbol) {
+    
+    private Set<Integer> getTransitionState(Set<Integer> state, String symbol) {
         for (Set<Integer> key : transitions.keySet()) {
-            if (key.contains(state) && transitions.get(key).containsKey(symbol)) {
+            if (key.containsAll(state) && transitions.get(key).containsKey(symbol)) {
                 Set<Integer> targetSet = transitions.get(key).get(symbol);
-                if (!targetSet.isEmpty()) {  
-                    return targetSet.iterator().next();
+                if (!targetSet.isEmpty()) {
+                    return targetSet;
                 }
             }
         }
-        return -1;
-    }
+        return new HashSet<>(); 
+    }  
 
-    private void reconstructMinimizedAFD(Set<Set<Integer>> partitions) {
+    private void reconstructMinimizedAFD(Set<Set<Set<Integer>>> partitions) {
         Map<Set<Integer>, Map<String, Set<Integer>>> minimizedTransitions = new HashMap<>();
         this.stateMapping = new HashMap<>();
         stateMapping.clear();
-
+        
         Set<Integer> minimizedStartState = null;
-        Set<Integer> deadState = null;
-
+        Set<Integer> minimizedDeadState = null;
+        
         int stateCounter = 0;
-        for (Set<Integer> partition : partitions) {
-            stateMapping.put(partition, stateCounter++);
-            if (partition.containsAll(startState)) {
-                minimizedStartState = partition; 
-            }
-            if (partition.isEmpty()) {  
-                deadState = partition;
+        for (Set<Set<Integer>> partition : partitions) {
+            for (Set<Integer> state : partition) {
+                stateMapping.put(state, stateCounter++);
+                
+                if (minimizedStartState == null && containsStartState(state)) {
+                    minimizedStartState = state;
+                }
+                
+                if (state.isEmpty()) {
+                    minimizedDeadState = state;
+                }
             }
         }
 
-        for (Set<Integer> partition : partitions) {
-            Set<Integer> representative = partition;
-            Map<String, Set<Integer>> transitionMap = new HashMap<>();
-
-            for (String symbol : symbolTable.values()) {
-                boolean foundTransition = false;
-                for (Set<Integer> targetPartition : partitions) {
-                    if (targetPartition.contains(getTransitionState(representative.iterator().next(), symbol))) {
-                        transitionMap.put(symbol, targetPartition);
-                        foundTransition = true;
-                        break;
+        if (minimizedDeadState != null) {
+            for (Set<Set<Integer>> partition : partitions) {
+                partition.remove(minimizedDeadState);  
+            }
+        }
+    
+        for (Set<Set<Integer>> partition : partitions) {
+            for (Set<Integer> state : partition) {
+                Map<String, Set<Integer>> transitionMap = new HashMap<>();
+    
+                for (String symbol : symbolTable.values()) {
+                    Set<Integer> targetState = getTransitionState(state, symbol);
+                    
+                    if (targetState.isEmpty() && minimizedDeadState != null) {
+                        transitionMap.put(symbol, minimizedDeadState);
+                    } else {
+                        for (Set<Set<Integer>> targetPartition : partitions) {
+                            for (Set<Integer> targetStateSet : targetPartition) {
+                                if (targetStateSet.equals(targetState)) {
+                                    transitionMap.put(symbol, targetStateSet);
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
-                if (!foundTransition && deadState != null) {
-                    transitionMap.put(symbol, deadState);  
-                }
+                
+                minimizedTransitions.put(state, transitionMap);
             }
-
-            minimizedTransitions.put(partition, transitionMap);
         }
-
-        this.states = partitions;
+        
+        // Update the transitions, states, and start state with minimized values
+        this.states = new HashSet<>();
+        for (Set<Set<Integer>> partition : partitions) {
+            this.states.addAll(partition);
+        }
         this.transitions = minimizedTransitions;
-        this.startState = minimizedStartState; 
+        this.startState = minimizedStartState;
     }
+    
+    // Helper method to check if a state contains the original start state
+    private boolean containsStartState(Set<Integer> state) {
+        return state.containsAll(startState);
+    }    
 
     public void printAFD() {
         System.out.println("Estados:");
