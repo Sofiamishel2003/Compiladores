@@ -41,10 +41,11 @@ public class Main {
         var followpos = astBuilder.getFollowpos();
         var symbolTable = astBuilder.getSymbolTable();
         var startState = astBuilder.getStartState(root);
+        var acceptingPosition = astBuilder.getAcceptingPosition();
 
         // 4. Generar el AFD
-        AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState);
-        afd.generateAFD();
+        AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState, acceptingPosition);
+        //afd.generateAFD();
 
         // 5. Imprimir los estados y transiciones del AFD
         afd.printAFD();

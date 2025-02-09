@@ -9,14 +9,27 @@ public class AFDGenerator {
     private Set<Set<Integer>> states;
     private Map<Set<Integer>, Map<String, Set<Integer>>> transitions;
     private Set<Integer> deadState;
+    private Set<Set<Integer>> acceptedStates;
 
-    public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState) {
+    public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState, int acceptingPosition) {
         this.followpos = followpos;
         this.symbolTable = symbolTable;
         this.startState = startState;
         this.states = new HashSet<>();
         this.transitions = new HashMap<>();
         this.deadState = new HashSet<>();
+        this.acceptedStates = new HashSet<>();
+
+        generateAFD();  // Generate the AFD and populate states and transitions
+        markAcceptedStates(acceptingPosition);
+    }
+
+    private void markAcceptedStates(int acceptingPosition) {
+        for (Set<Integer> state : states) {
+            if (state.contains(acceptingPosition)) {
+                acceptedStates.add(state);
+            }
+        }
     }
 
     public void generateAFD() {
@@ -57,7 +70,7 @@ public class AFDGenerator {
     public void printAFD() {
         System.out.println("Estados:");
         for (Set<Integer> state : states) {
-            System.out.println(state);
+            System.out.println(state + (acceptedStates.contains(state) ? " (Accepted)" : ""));
         }
         System.out.println("\nTransiciones:");
         for (Map.Entry<Set<Integer>, Map<String, Set<Integer>>> entry : transitions.entrySet()) {

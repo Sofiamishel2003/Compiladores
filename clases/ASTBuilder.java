@@ -7,6 +7,7 @@ public class ASTBuilder {
     private int positionCounter = 1;
     private Map<Integer, Set<Integer>> followpos = new HashMap<>();
     private Map<Integer, String> symbolTable = new HashMap<>();
+    int acceptingPosition = -1;
     
     public ASTBuilder(String postfix) {
         this.postfix = postfix;
@@ -14,6 +15,7 @@ public class ASTBuilder {
 
     public ASTNode buildAST() {
         Stack<ASTNode> stack = new Stack<>();
+
         for (char c : postfix.toCharArray()) {
             if (c == '|' || c == '^') {
                 ASTNode right = stack.pop();
@@ -28,6 +30,7 @@ public class ASTBuilder {
                 ASTNode leaf = new ASTNode(".", positionCounter); // El punto es tratado como símbolo
                 //followpos.put(positionCounter, new HashSet<>());
                 stack.push(leaf);
+                acceptingPosition = positionCounter;
                 positionCounter++;
             } else {
                 ASTNode leaf = new ASTNode(String.valueOf(c), positionCounter);
@@ -98,5 +101,9 @@ public class ASTBuilder {
 
     public Set<Integer> getStartState(ASTNode root) {
         return root.firstpos; 
+    }
+
+    public int getAcceptingPosition() {
+        return acceptingPosition;
     }
 }
