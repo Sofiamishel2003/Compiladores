@@ -31,8 +31,8 @@ public class Main {
         System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex6));
 
         // 2. Construir el AST a partir de la expresión postfija
-        //ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
-        ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
+        ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
+        //ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
         ASTNode root = astBuilder.buildAST();
         astBuilder.computeNullableFirstLast(root);
         astBuilder.computeFollowpos(root);

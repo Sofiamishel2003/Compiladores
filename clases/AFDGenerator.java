@@ -57,6 +57,14 @@ public class AFDGenerator {
                 }
             }
 
+            if (currentState.isEmpty()) {
+                for (String symbol : symbolTable.values()) {
+                    // Add transitions from the empty state to itself for all symbols
+                    transitionMap.putIfAbsent(symbol, new HashSet<>());
+                    transitionMap.get(symbol).addAll(currentState);  // Empty state transitions to itself
+                }
+            }
+
             transitions.put(currentState, transitionMap);
 
             for (Set<Integer> newState : transitionMap.values()) {
