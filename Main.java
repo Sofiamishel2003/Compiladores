@@ -8,9 +8,9 @@ public class Main {
         String regex1 = "a|b*";
         String regex2 = "(a|b)*c";
         String regex3 = "a(b|c)/*d";
-        String regex4 = "[abc]+";
-        String regex5 = "\"string\"*#a|b";
-        String regex6 = "a(b|c)#(d*)";
+        String regex4 = "[a-f]*";
+        String regex5 = "a+";
+        String regex6 = "a?";
 
         System.out.println("Expresión infija: " + regex1);
         System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex1));

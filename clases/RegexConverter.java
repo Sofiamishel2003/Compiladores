@@ -7,19 +7,56 @@ public class RegexConverter {
     private static final Map<String, Integer> PRECEDENCE = Map.of(
             "#", 4,  // Diferencia de conjuntos (mayor precedencia)
             "*", 3,  // Cerradura Kleene
-            "+", 3,  // Cerradura Positiva
-            "?", 3,  // Existencia opcional
+            "+", 3,  // Cerradura Positiva (convertida a aa*)
+            "?", 3,  // Existencia opcional (convertida a a|ε)
             "^", 2,  // Concatenación implícita
             "|", 1   // Alternancia
     );
 
+    public static String preprocessRegex(String regex) {
+        StringBuilder processed = new StringBuilder();
+        for (int i = 0; i < regex.length(); i++) {
+            char c = regex.charAt(i);
+            if (c == '+') {
+                processed.append(processed.charAt(processed.length() - 1)).append("*");
+            } else if (c == '?') {
+                processed.append("|ε");
+            } else if (c == '[') {
+                int j = i + 1;
+                StringBuilder charSet = new StringBuilder("(");
+                while (j < regex.length() && regex.charAt(j) != ']') {
+                    if (j < regex.length() - 2 && regex.charAt(j + 1) == '-') {
+                        char start = regex.charAt(j);
+                        char end = regex.charAt(j + 2);
+                        for (char ch = start; ch <= end; ch++) {
+                            charSet.append(ch).append("|");
+                        }
+                        j += 3;
+                    } else {
+                        charSet.append(regex.charAt(j)).append("|");
+                        j++;
+                    }
+                }
+                if (charSet.charAt(charSet.length() - 1) == '|') {
+                    charSet.deleteCharAt(charSet.length() - 1);
+                }
+                charSet.append(")"); // Aplicar * correctamente a todo el conjunto
+                processed.append(charSet);
+                i = j;
+            } else {
+                processed.append(c);
+            }
+        }
+        return processed.append(".").toString(); // Agregar punto final
+    }
+
     public static String toPostfix(String infix) {
-        //infix = "(" + infix + ").";
+        infix = preprocessRegex(infix);
+        System.out.println("Preprocessed Regex: " + infix);
+        System.out.println(infix);
         List<Symbol> formattedRegex = tokenize(infix);
         StringBuilder postfix = new StringBuilder();
         Stack<Symbol> stack = new Stack<>();
-
-        
 
         for (Symbol symbol : formattedRegex) {
             String value = symbol.getValue();
@@ -45,7 +82,7 @@ public class RegexConverter {
             postfix.append(stack.pop().getValue());
         }
 
-        return postfix.toString().replaceAll("[()]", ""); // Elimina paréntesis y concatenación implícita incorrecta
+        return postfix.toString().replaceAll("[()^]", ""); // Elimina paréntesis y concatenación implícita incorrecta
     }
 
     private static int getPrecedence(String operator) {
@@ -64,24 +101,6 @@ public class RegexConverter {
                 escapeNext = !escapeNext;
                 result.add(new Symbol(c1, false));
             } else if (!escapeNext) {
-                if (c1.equals("[")) {
-                    int j = i;
-                    while (j < length && regex.charAt(j) != ']') j++;
-                    c1 = regex.substring(i, j + 1);
-                    i = j;
-                } else if (c1.equals("\"")) {
-                    int j = i + 1;
-                    while (j < length && regex.charAt(j) != '"') j++;
-                    c1 = regex.substring(i, j + 1);
-                    i = j;
-                } else if (i < length - 1 && c1.equals("/")) {
-                    char next = regex.charAt(i + 1);
-                    if (next == '*' || next == '+') {
-                        c1 = "/" + next;
-                        i++;
-                    }
-                }
-
                 boolean isOperator = OPERATORS.contains(c1);
                 if (!isOperator && !result.isEmpty()) {
                     Symbol prev = result.get(result.size() - 1);
@@ -89,7 +108,6 @@ public class RegexConverter {
                         result.add(new Symbol("^", true));
                     }
                 }
-
                 result.add(new Symbol(c1, isOperator));
                 escapeNext = false;
             } else {
