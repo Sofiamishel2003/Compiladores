@@ -2,6 +2,12 @@ import clases.AFDGenerator;
 import clases.ASTBuilder;
 import clases.ASTNode;
 import clases.RegexConverter;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) {
@@ -55,5 +61,28 @@ public class Main {
         //7. Imprimir los estados y transiciones del AFD minimizado
         System.out.println("\n=== AFD Minimizado ===");
         afd.printAFD();
+
+        // Leer cadenas desde JSON y verificarlas
+        try (FileReader reader = new FileReader("cadenas.json")) {
+            JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
+            JsonArray cadenasArray = jsonObject.getAsJsonArray("cadenas");
+
+            System.out.println("\nResultados de verificación:");
+            for (JsonElement elemento : cadenasArray) {
+                String cadena = elemento.getAsString();
+                boolean aceptada = afd.verificarCadena(cadena);
+                System.out.println("La cadena \"" + cadena + "\" es aceptada: " + aceptada);
+            }
+        } catch (IOException e) {
+            System.err.println("Error al leer el archivo JSON: " + e.getMessage());
+        }
+
+        // Generar la representación visual del AFD
+        afd.generarDot("afd.dot");
+        afd.minimizeAFD();
+        afd.generarDot("afd_min.dot");
+
+        System.out.println("\nArchivos DOT generados: afd.dot y afd_min.dot");
+
     }
 }

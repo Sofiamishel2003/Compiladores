@@ -1,6 +1,8 @@
 package clases;
 
 import java.util.*;
+import java.io.PrintWriter;
+import java.io.IOException;
 
 public class AFDGenerator {
     private Map<Integer, Set<Integer>> followpos;
@@ -229,6 +231,56 @@ public class AFDGenerator {
             for (Map.Entry<String, Set<Integer>> transition : entry.getValue().entrySet()) {
                 System.out.println(fromState + " -- " + transition.getKey() + " --> " + transition.getValue());
             }
+        }
+    }
+
+    public boolean verificarCadena(String cadena) {
+        Set<Integer> estadoActual = startState; // Iniciar en el estado inicial
+
+        for (char simbolo : cadena.toCharArray()) {
+            String simboloStr = String.valueOf(simbolo);
+            if (!transitions.containsKey(estadoActual) || !transitions.get(estadoActual).containsKey(simboloStr)) {
+                return false; // No hay transición para el símbolo, la cadena no es aceptada
+            }
+            estadoActual = transitions.get(estadoActual).get(simboloStr); // Mover al siguiente estado
+        }
+
+        return acceptedStates.contains(estadoActual); // Verificar si el estado final es de aceptación
+    }
+
+    public void generarDot(String nombreArchivo) {
+        StringBuilder dot = new StringBuilder();
+        dot.append("digraph AFD {\n");
+        dot.append("    rankdir=LR;\n");
+        dot.append("    node [shape=circle];\n");
+
+        for (Set<Integer> estado : states) {
+            String estadoLabel = estado.toString();
+            if (acceptedStates.contains(estado)) {
+                dot.append("    \"" + estadoLabel + "\" [shape=doublecircle];\n");
+            }
+            if (estado.equals(startState)) {
+                dot.append("    inicio [shape=point];\n");
+                dot.append("    inicio -> \"" + estadoLabel + "\";\n");
+            }
+        }
+
+        for (Map.Entry<Set<Integer>, Map<String, Set<Integer>>> transicion : transitions.entrySet()) {
+            Set<Integer> desde = transicion.getKey();
+            for (Map.Entry<String, Set<Integer>> mov : transicion.getValue().entrySet()) {
+                String simbolo = mov.getKey();
+                Set<Integer> hacia = mov.getValue();
+                dot.append("    \"" + desde + "\" -> \"" + hacia + "\" [label=\"" + simbolo + "\"];\n");
+            }
+        }
+
+        dot.append("}\n");
+
+        try (PrintWriter writer = new PrintWriter(nombreArchivo)) {
+            writer.write(dot.toString());
+            System.out.println("Archivo DOT generado: " + nombreArchivo);
+        } catch (IOException e) {
+            System.err.println("Error al escribir el archivo DOT: " + e.getMessage());
         }
     }
 }
