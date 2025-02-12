@@ -37,7 +37,8 @@ public class Main {
         // 2. Construir el AST a partir de la expresión postfija
         //ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
         //ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
-        ASTBuilder astBuilder = new ASTBuilder("a?*|.^");
+        //ASTBuilder astBuilder = new ASTBuilder("aε*|.^");
+        ASTBuilder astBuilder = new ASTBuilder("a/**|.^");
         ASTNode root = astBuilder.buildAST();
         astBuilder.computeNullableFirstLast(root);
         astBuilder.computeFollowpos(root);

@@ -46,7 +46,7 @@ public class AFDGenerator {
 
             for (int position : currentState) {
                 String symbol = symbolTable.get(position);
-                if (symbol == null || symbol.equals("?")) {
+                if (symbol == null || symbol.equals("?") || symbol.equals("ε")) {
                     // If the state has a null symbol, it should transition to the dead state for all symbols
                     for (String transitionSymbol : symbolTable.values()) {
                         transitionMap.putIfAbsent(transitionSymbol, new HashSet<>());
