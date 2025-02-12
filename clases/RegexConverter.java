@@ -3,20 +3,25 @@ package clases;
 import java.util.*;
 
 public class RegexConverter {
-    private static final Set<String> OPERATORS = Set.of("|", "?", "+", "*", "#", "/*", "/+");
+    private static final Set<String> OPERATORS = Set.of("|", "^", "?", "+", "*", "/*");
     private static final Map<String, Integer> PRECEDENCE = Map.of(
-            "#", 4,  // Diferencia de conjuntos (mayor precedencia)
-            "*", 3,  // Cerradura Kleene
-            "+", 3,  // Cerradura Positiva (convertida a aa*)
-            "?", 3,  // Existencia opcional (convertida a a|ε)
-            "^", 2,  // Concatenación implícita
-            "|", 1   // Alternancia
+            "*", 3,   // Cerradura de Kleene
+            "+", 3,   // Cerradura positiva
+            "?", 3,   // Opcionalidad
+            "/*", 3,  // Operador especial
+            "^", 2,   // Concatenación explícita
+            "|", 1    // Alternancia
     );
 
+    /**
+     * Preprocesa la regex, agregando operadores de concatenación (`^`)
+     * y transformando los conjuntos como [0-9] en (0|1|2|...|9).
+     */
     public static String preprocessRegex(String regex) {
         StringBuilder processed = new StringBuilder();
         for (int i = 0; i < regex.length(); i++) {
             char c = regex.charAt(i);
+
             if (c == '+') {
                 processed.append(processed.charAt(processed.length() - 1)).append("*");
             } else if (c == '?') {
@@ -40,82 +45,89 @@ public class RegexConverter {
                 if (charSet.charAt(charSet.length() - 1) == '|') {
                     charSet.deleteCharAt(charSet.length() - 1);
                 }
-                charSet.append(")"); // Aplicar * correctamente a todo el conjunto
+                charSet.append(")");
                 processed.append(charSet);
                 i = j;
             } else {
                 processed.append(c);
             }
+
+            // Insertar operador de concatenación `^` cuando sea necesario
+            if (i < regex.length() - 1) {
+                char next = regex.charAt(i + 1);
+                
+                // Agregar ^ entre dos símbolos que requieren concatenación
+                if ((Character.isLetterOrDigit(c) || c == '*' || c == '?' || c == ')' || c == ']' || c == '}' || c == '+') &&
+                    (Character.isLetterOrDigit(next) || next == '(')) {
+                    processed.append("^");
+                }
+            }
+
         }
         return processed.append(".").toString(); // Agregar punto final
     }
 
+    /**
+     * Convierte una expresión regular infija a postfija usando Shunting Yard.
+     */
     public static String toPostfix(String infix) {
         infix = preprocessRegex(infix);
         System.out.println("Preprocessed Regex: " + infix);
-        System.out.println(infix);
-        List<Symbol> formattedRegex = tokenize(infix);
-        StringBuilder postfix = new StringBuilder();
-        Stack<Symbol> stack = new Stack<>();
 
-        for (Symbol symbol : formattedRegex) {
-            String value = symbol.getValue();
+        List<String> output = new ArrayList<>();
+        Stack<String> stack = new Stack<>();
+        List<String> tokens = tokenize(infix);
 
-            if (!symbol.isOperator()) {
-                postfix.append(value);
-            } else if (value.equals("(")) {
-                stack.push(symbol);
-            } else if (value.equals(")")) {
-                while (!stack.isEmpty() && !stack.peek().getValue().equals("(")) {
-                    postfix.append(stack.pop().getValue());
+        for (String token : tokens) {
+            if (!OPERATORS.contains(token) && !token.equals("(") && !token.equals(")")) {
+                output.add(token);
+            } else if (token.equals("(")) {
+                stack.push(token);
+            } else if (token.equals(")")) {
+                while (!stack.isEmpty() && !stack.peek().equals("(")) {
+                    output.add(stack.pop());
                 }
                 stack.pop(); // Quitar '('
             } else {
-                while (!stack.isEmpty() && getPrecedence(stack.peek().getValue()) >= getPrecedence(value)) {
-                    postfix.append(stack.pop().getValue());
+                while (!stack.isEmpty() && !stack.peek().equals("(") &&
+                        PRECEDENCE.get(stack.peek()) >= PRECEDENCE.get(token)) {
+                    output.add(stack.pop());
                 }
-                stack.push(symbol);
+                stack.push(token);
             }
         }
 
         while (!stack.isEmpty()) {
-            postfix.append(stack.pop().getValue());
+            output.add(stack.pop());
         }
 
-        return postfix.toString().replaceAll("[()^]", ""); // Elimina paréntesis y concatenación implícita incorrecta
+        return String.join("", output);
     }
 
-    private static int getPrecedence(String operator) {
-        return PRECEDENCE.getOrDefault(operator, -1);
-    }
-
-    private static List<Symbol> tokenize(String regex) {
-        List<Symbol> result = new ArrayList<>();
+    /**
+     * Tokeniza la expresión regular, asegurando que los operadores como "/*" se manejen correctamente.
+     */
+    private static List<String> tokenize(String regex) {
+        List<String> tokens = new ArrayList<>();
         boolean escapeNext = false;
-        int length = regex.length();
 
-        for (int i = 0; i < length; i++) {
-            String c1 = String.valueOf(regex.charAt(i));
+        for (int i = 0; i < regex.length(); i++) {
+            char c = regex.charAt(i);
 
-            if (c1.equals("\\")) {
-                escapeNext = !escapeNext;
-                result.add(new Symbol(c1, false));
-            } else if (!escapeNext) {
-                boolean isOperator = OPERATORS.contains(c1);
-                if (!isOperator && !result.isEmpty()) {
-                    Symbol prev = result.get(result.size() - 1);
-                    if (!prev.isOperator() && !prev.getValue().equals("(")) {
-                        result.add(new Symbol("^", true));
-                    }
-                }
-                result.add(new Symbol(c1, isOperator));
+            if (escapeNext) {
+                tokens.add("\\" + c);
                 escapeNext = false;
+            } else if (c == '\\') {
+                escapeNext = true;
+            } else if (i < regex.length() - 1 && c == '/' && regex.charAt(i + 1) == '*') {
+                tokens.add("/*");
+                i++;
+            } else if (OPERATORS.contains(String.valueOf(c)) || c == '(' || c == ')') {
+                tokens.add(String.valueOf(c));
             } else {
-                result.add(new Symbol(c1, false));
-                escapeNext = false;
+                tokens.add(String.valueOf(c));
             }
         }
-
-        return result;
+        return tokens;
     }
 }
