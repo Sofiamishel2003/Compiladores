@@ -15,9 +15,24 @@ public class ASTBuilder {
 
     public ASTNode buildAST() {
         Stack<ASTNode> stack = new Stack<>();
-
+        boolean escaped = false;
         for (char c : postfix.toCharArray()) {
-            if (c == '|' || c == '^') {
+            if (escaped) {
+                // El carácter actual se trata como símbolo porque antes hubo '/'
+                ASTNode leaf = new ASTNode(String.valueOf(c), positionCounter);
+                symbolTable.put(positionCounter, String.valueOf(c));
+                followpos.put(positionCounter, new HashSet<>());
+                stack.push(leaf);
+                positionCounter++;
+                escaped = false; // Resetear la bandera
+            } else if (c == '/') {
+                escaped = true; // La siguiente iteración debe tratar el carácter como símbolo
+            } else if (c == '?' || c == 'ε') {
+                // Epsilon: Es siempre nullable, sin firstpos ni lastpos
+                ASTNode epsilonNode = new ASTNode("?", -1); 
+                epsilonNode.nullable = true;
+                stack.push(epsilonNode);
+            }else if (c == '|' || c == '^') {
                 ASTNode right = stack.pop();
                 ASTNode left = stack.pop();
                 stack.push(new ASTNode(String.valueOf(c), left, right));
@@ -50,6 +65,8 @@ public class ASTBuilder {
 
         if (node.position != -1) {
             node.nullable = false;
+        } else if (node.value.equals("?")) {
+            node.nullable = true;  // Siempre nullable
         } else if (node.value.equals("|")) {
             node.nullable = node.left.nullable || node.right.nullable;
             node.firstpos.addAll(node.left.firstpos);

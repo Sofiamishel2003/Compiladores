@@ -1,8 +1,6 @@
 package clases;
 
 import java.util.*;
-import java.io.PrintWriter;
-import java.io.IOException;
 
 public class AFDGenerator {
     private Map<Integer, Set<Integer>> followpos;
@@ -48,7 +46,7 @@ public class AFDGenerator {
 
             for (int position : currentState) {
                 String symbol = symbolTable.get(position);
-                if (symbol == null) {
+                if (symbol == null || symbol.equals("?")) {
                     // If the state has a null symbol, it should transition to the dead state for all symbols
                     for (String transitionSymbol : symbolTable.values()) {
                         transitionMap.putIfAbsent(transitionSymbol, new HashSet<>());
@@ -233,7 +231,7 @@ public class AFDGenerator {
             }
         }
     }
-
+/* 
     public boolean verificarCadena(String cadena) {
         Set<Integer> estadoActual = startState; // Iniciar en el estado inicial
 
@@ -282,6 +280,6 @@ public class AFDGenerator {
         } catch (IOException e) {
             System.err.println("Error al escribir el archivo DOT: " + e.getMessage());
         }
-    }
+    }*/
 }
 
