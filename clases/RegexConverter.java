@@ -64,7 +64,7 @@ public class RegexConverter {
             }
 
         }
-        return processed.append(".").toString(); // Agregar punto final
+        return processed.append("^.").toString(); // Agregar punto final
     }
 
     /**
