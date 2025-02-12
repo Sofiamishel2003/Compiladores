@@ -23,7 +23,7 @@ public class RegexConverter {
             char c = regex.charAt(i);
 
             if (c == '+') {
-                processed.append(processed.charAt(processed.length() - 1)).append("*");
+                processed.append("^").append(processed.charAt(processed.length() - 2)).append("*");
             } else if (c == '?') {
                 processed.append("|ε");
             } else if (c == '[') {

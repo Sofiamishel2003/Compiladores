@@ -2,6 +2,12 @@ import clases.AFDGenerator;
 import clases.ASTBuilder;
 import clases.ASTNode;
 import clases.RegexConverter;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import java.io.FileReader;
+import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) {
@@ -11,34 +17,16 @@ public class Main {
         String regex4 = "[a-f]*";
         String regex5 = "a+";
         String regex6 = "a?";
-        String regex7 = "\\*\\+";
-
-        System.out.println("Expresión infija: " + regex7);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex7));
-
-        System.out.println("Expresión infija: " + regex1);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex1));
-
-        System.out.println("\nExpresión infija: " + regex2);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex2));
-
-        System.out.println("\nExpresión infija: " + regex3);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex3));
-
-        System.out.println("\nExpresión infija: " + regex4);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex4));
-
-        System.out.println("\nExpresión infija: " + regex5);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex5));
-
-        System.out.println("\nExpresión infija: " + regex6);
-        System.out.println("Expresión postfija: " + RegexConverter.toPostfix(regex6));
+        String regex7 = "(/.|/*)+";
+        String regex8 = "/./*|/./*|*^AB|C|ab|c|^^01|2|3|^.^";
 
         // 2. Construir el AST a partir de la expresión postfija
         //ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
         //ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
         //ASTBuilder astBuilder = new ASTBuilder("aε*|.^");
-        ASTBuilder astBuilder = new ASTBuilder("a/**|.^");
+        //ASTBuilder astBuilder = new ASTBuilder("a/**|.^");
+        ASTBuilder astBuilder = new ASTBuilder(RegexConverter.toPostfix(regex5));
+        //ASTBuilder astBuilder = new ASTBuilder(regex8);
         ASTNode root = astBuilder.buildAST();
         astBuilder.computeNullableFirstLast(root);
         astBuilder.computeFollowpos(root);
@@ -62,7 +50,7 @@ public class Main {
         System.out.println("\n=== AFD Minimizado ===");
         afd.printAFD();
 
-        /*// Leer cadenas desde JSON y verificarlas
+        // Leer cadenas desde JSON y verificarlas
         try (FileReader reader = new FileReader("cadenas.json")) {
             JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
             JsonArray cadenasArray = jsonObject.getAsJsonArray("cadenas");
@@ -82,7 +70,7 @@ public class Main {
         afd.minimizeAFD();
         afd.generarDot("afd_min.dot");
 
-        System.out.println("\nArchivos DOT generados: afd.dot y afd_min.dot");*/
+        System.out.println("\nArchivos DOT generados: afd.dot y afd_min.dot");
 
     }
 }

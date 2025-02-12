@@ -46,24 +46,26 @@ public class AFDGenerator {
 
             for (int position : currentState) {
                 String symbol = symbolTable.get(position);
+
                 if (symbol == null || symbol.equals("?") || symbol.equals("ε")) {
-                    // If the state has a null symbol, it should transition to the dead state for all symbols
+                    // si el estado tiene un simbolo null deberia ir al deadstate
                     for (String transitionSymbol : symbolTable.values()) {
                         transitionMap.putIfAbsent(transitionSymbol, new HashSet<>());
-                        transitionMap.get(transitionSymbol).addAll(deadState);  // All transitions go to the dead state
+                        transitionMap.get(transitionSymbol).addAll(deadState);  // todas las transiciones van al deadstate
                     }
                 } else {
-                    // Normal transition for valid symbols
+                    // transiciones para simbolos validos
                     transitionMap.putIfAbsent(symbol, new HashSet<>());
                     transitionMap.get(symbol).addAll(followpos.get(position));
                 }
+                
             }
 
             if (currentState.isEmpty()) {
                 for (String symbol : symbolTable.values()) {
-                    // Add transitions from the empty state to itself for all symbols
+                    // deadstate a si mismo para todas las transiciones
                     transitionMap.putIfAbsent(symbol, new HashSet<>());
-                    transitionMap.get(symbol).addAll(currentState);  // Empty state transitions to itself
+                    transitionMap.get(symbol).addAll(currentState);  
                 }
             }
 
@@ -78,7 +80,7 @@ public class AFDGenerator {
         }
     }
 
-    /** MINIMIZATION USING HOPCROFT'S ALGORITHM **/
+    /** MINIMIZACION USANDO HOPCROFT'S ALGORITHM **/
     public void minimizeAFD() {
         Set<Set<Integer>> acceptingGroup = new HashSet<>();
         Set<Set<Integer>> nonAcceptingGroup = new HashSet<>();
@@ -111,6 +113,7 @@ public class AFDGenerator {
                         for (Set<Set<Integer>> partition : partitions) {
                             for (Set<Integer> partitionState : partition) {
                                 if (partitionState.equals(targetState)) {
+                                    
                                     transitionMap.put(symbol, partitionState);
                                     break;
                                 }
@@ -197,7 +200,6 @@ public class AFDGenerator {
             }
         }
         
-        // Update the transitions, states, and start state with minimized values
         this.states = new HashSet<>();
         for (Set<Set<Integer>> partition : partitions) {
             this.states.addAll(partition);
@@ -206,7 +208,6 @@ public class AFDGenerator {
         this.startState = minimizedStartState;
     }
     
-    // Helper method to check if a state contains the original start state
     private boolean containsStartState(Set<Integer> state) {
         return state.containsAll(startState);
     }    
@@ -231,7 +232,7 @@ public class AFDGenerator {
             }
         }
     }
-/* 
+
     public boolean verificarCadena(String cadena) {
         Set<Integer> estadoActual = startState; // Iniciar en el estado inicial
 
@@ -280,6 +281,6 @@ public class AFDGenerator {
         } catch (IOException e) {
             System.err.println("Error al escribir el archivo DOT: " + e.getMessage());
         }
-    }*/
+    }
 }
 
