@@ -1,6 +1,6 @@
 {
   "regex": [
-    "[a-f]*"
+    "a(b|c)/*d"
   ],
   "cadenas": [
     "abb",
