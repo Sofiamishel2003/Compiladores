@@ -11,66 +11,54 @@ import java.io.IOException;
 
 public class Main {
     public static void main(String[] args) {
-        String regex1 = "a|b*";
-        String regex2 = "(a|b)*c";
-        String regex3 = "a(b|c)/*d";
-        String regex4 = "[a-f]*";
-        String regex5 = "a+";
-        String regex6 = "a?";
-        String regex7 = "(/.|/*)+";
-        String regex8 = "/./*|/./*|*^AB|C|ab|c|^^01|2|3|^.^";
-
-        // 2. Construir el AST a partir de la expresión postfija
-        //ASTBuilder astBuilder = new ASTBuilder("ab|*a^b^b^.^");
-        //ASTBuilder astBuilder = new ASTBuilder("ab*|.^");
-        //ASTBuilder astBuilder = new ASTBuilder("aε*|.^");
-        //ASTBuilder astBuilder = new ASTBuilder("a/**|.^");
-        ASTBuilder astBuilder = new ASTBuilder(RegexConverter.toPostfix(regex5));
-        //ASTBuilder astBuilder = new ASTBuilder(regex8);
-        ASTNode root = astBuilder.buildAST();
-        astBuilder.computeNullableFirstLast(root);
-        astBuilder.computeFollowpos(root);
-
-        // 3. Obtener followpos y la tabla de símbolos
-        var followpos = astBuilder.getFollowpos();
-        var symbolTable = astBuilder.getSymbolTable();
-        var startState = astBuilder.getStartState(root);
-        var acceptingPosition = astBuilder.getAcceptingPosition();
-
-        // 4. Generar el AFD
-        AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState, acceptingPosition);
-        
-        // 5. Imprimir los estados y transiciones del AFD
-        afd.printAFD();
-
-        //6. Generar el AFD minimizado
-        afd.minimizeAFD();
-        
-        //7. Imprimir los estados y transiciones del AFD minimizado
-        System.out.println("\n=== AFD Minimizado ===");
-        afd.printAFD();
-
-        // Leer cadenas desde JSON y verificarlas
-        try (FileReader reader = new FileReader("cadenas.json")) {
+        try (FileReader reader = new FileReader("input.json")) {
             JsonObject jsonObject = JsonParser.parseReader(reader).getAsJsonObject();
+            JsonArray regexArray = jsonObject.getAsJsonArray("regex");
             JsonArray cadenasArray = jsonObject.getAsJsonArray("cadenas");
 
-            System.out.println("\nResultados de verificación:");
-            for (JsonElement elemento : cadenasArray) {
-                String cadena = elemento.getAsString();
-                boolean aceptada = afd.verificarCadena(cadena);
-                System.out.println("La cadena \"" + cadena + "\" es aceptada: " + aceptada);
+            for (JsonElement regexElement : regexArray) {
+                String regex = regexElement.getAsString();
+                System.out.println("\nProcesando regex: " + regex);
+
+                // Construcción del AST a partir de la expresión postfija
+                ASTBuilder astBuilder = new ASTBuilder(RegexConverter.toPostfix(regex));
+                ASTNode root = astBuilder.buildAST();
+                astBuilder.computeNullableFirstLast(root);
+                astBuilder.computeFollowpos(root);
+
+                // Obtener followpos y la tabla de símbolos
+                var followpos = astBuilder.getFollowpos();
+                var symbolTable = astBuilder.getSymbolTable();
+                var startState = astBuilder.getStartState(root);
+                var acceptingPosition = astBuilder.getAcceptingPosition();
+
+                // Generar el AFD
+                AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState, acceptingPosition);
+
+                // Imprimir los estados y transiciones del AFD
+                afd.printAFD();
+
+                // Minimizar el AFD
+                afd.minimizeAFD();
+                System.out.println("\n=== AFD Minimizado ===");
+                afd.printAFD();
+
+                // Verificar cadenas con el AFD generado
+                System.out.println("\nResultados de verificación para regex: " + regex);
+                for (JsonElement cadenaElement : cadenasArray) {
+                    String cadena = cadenaElement.getAsString();
+                    boolean aceptada = afd.verificarCadena(cadena);
+                    System.out.println("La cadena \"" + cadena + "\" es aceptada: " + aceptada);
+                }
+
+                // Generar representaciones visuales del AFD
+                afd.generarDot("afd_" + regex.hashCode() + ".dot");
+                afd.minimizeAFD();
+                afd.generarDot("afd_min_" + regex.hashCode() + ".dot");
             }
+
         } catch (IOException e) {
             System.err.println("Error al leer el archivo JSON: " + e.getMessage());
         }
-
-        // Generar la representación visual del AFD
-        afd.generarDot("afd.dot");
-        afd.minimizeAFD();
-        afd.generarDot("afd_min.dot");
-
-        System.out.println("\nArchivos DOT generados: afd.dot y afd_min.dot");
-
     }
 }

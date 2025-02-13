@@ -1,4 +1,7 @@
 {
+  "regex": [
+    "[a-f]*"
+  ],
   "cadenas": [
     "abb",
     "aabb",
