@@ -23,7 +23,24 @@ public class RegexConverter {
             char c = regex.charAt(i);
 
             if (c == '+') {
-                processed.append("^").append(processed.charAt(processed.length() - 2)).append("*");
+                int lastIndex = processed.length() - 1;
+    
+                // Find the start of the last complete sub-expression
+                if (processed.charAt(lastIndex) == ')') {
+                    int openParenIndex = lastIndex;
+                    int balance = 1;
+                    while (openParenIndex > 0 && balance > 0) {
+                        openParenIndex--;
+                        if (processed.charAt(openParenIndex) == ')') balance++;
+                        if (processed.charAt(openParenIndex) == '(') balance--;
+                    }
+        
+                    if (balance == 0) {
+                        processed.append("^").append(processed.substring(openParenIndex, lastIndex + 1)).append("*");
+                    }
+                } else {
+                    processed.append("^").append(processed.charAt(lastIndex)).append("*");
+                }
             } else if (c == '?') {
                 processed.append("|ε");
             } else if (c == '[') {
