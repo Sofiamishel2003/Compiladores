@@ -1,6 +1,9 @@
 package clases;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class RegexConverter {
     private static final Set<String> OPERATORS = Set.of("|", "^", "?", "+", "*", "/*");

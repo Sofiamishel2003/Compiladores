@@ -1,9 +1,16 @@
 package clases;
-
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
 
 public class AFDGenerator {
     private Map<Integer, Set<Integer>> followpos;
@@ -12,7 +19,9 @@ public class AFDGenerator {
     private Set<Set<Integer>> states;
     private Map<Set<Integer>, Map<String, Set<Integer>>> transitions;
     private Set<Integer> deadState;
-    private Set<Set<Integer>> acceptedStates;
+    //private Set<Set<Integer>> acceptedStates;
+    private Map<Set<Integer>, String> acceptedStates;
+
     private Map<Set<Integer>, Integer> stateMapping;
     private Map<Set<Integer>, String> stateLabels;
 
@@ -24,20 +33,32 @@ public class AFDGenerator {
         this.states = new HashSet<>();
         this.transitions = new HashMap<>();
         this.deadState = new HashSet<>();
-        this.acceptedStates = new HashSet<>();
+        //this.acceptedStates = new HashSet<>();
+        this.acceptedStates = new HashMap<>();
         this.stateLabels = new HashMap<>();
 
         generateAFD(); // Generate the AFD and populate states and transitions
         markAcceptedStates(acceptingPosition);
+
+        generarCodigoLexer("Lexer.java");
     }
 
+    //private void markAcceptedStates(int acceptingPosition) {
+    //    for (Set<Integer> state : states) {
+    //        if (state.contains(acceptingPosition)) {
+    //            acceptedStates.add(state);
+    //        }
+    //    }
+    //}
     private void markAcceptedStates(int acceptingPosition) {
         for (Set<Integer> state : states) {
             if (state.contains(acceptingPosition)) {
-                acceptedStates.add(state);
+                String tokenName = symbolTable.get(acceptingPosition);
+                acceptedStates.put(state, tokenName); // Asocia el estado con el token
             }
         }
     }
+    
 
     public void generateAFD() {
         Queue<Set<Integer>> queue = new LinkedList<>();
@@ -91,7 +112,7 @@ public class AFDGenerator {
         Set<Set<Integer>> nonAcceptingGroup = new HashSet<>();
 
         for (Set<Integer> state : states) {
-            if (acceptedStates.contains(state)) {
+            if (acceptedStates.containsKey(state)) {
                 acceptingGroup.add(state);
             } else {
                 nonAcceptingGroup.add(state);
@@ -224,7 +245,7 @@ public class AFDGenerator {
             if (state.equals(startState)) {
                 stateLabel += " (Start)";
             }
-            if (acceptedStates.contains(state)) {
+            if (acceptedStates.containsKey(state)) {
                 stateLabel += " (Accepted)";
             }
             System.out.println(state + stateLabel);
@@ -249,14 +270,15 @@ public class AFDGenerator {
             estadoActual = transitions.get(estadoActual).get(simboloStr); // Mover al siguiente estado
         }
 
-        return acceptedStates.contains(estadoActual); // Verificar si el estado final es de aceptación
+        return acceptedStates.containsKey(estadoActual); // Verificar si el estado final es de aceptación
     }
 
     public void generarDot(String nombreBase) {
         new File("media/other").mkdirs(); // Carpeta para los archivos DOT
         new File("media/img").mkdirs(); // Carpeta para los archivos PNG
-        String dotFilePath = "media/other/" + nombreBase + ".dot";
-        String pngFilePath = "media/img/" + nombreBase + ".png";
+        String dotFilePath = "media/other" + nombreBase + ".dot";
+        String pngFilePath = "media/img" + nombreBase + ".png";
+        System.out.println(pngFilePath);
 
         StringBuilder dot = new StringBuilder();
         dot.append("digraph AFD {\n");
@@ -265,7 +287,7 @@ public class AFDGenerator {
 
         for (Set<Integer> estado : states) {
             String estadoLabel = estado.toString();
-            if (acceptedStates.contains(estado)) {
+            if (acceptedStates.containsKey(estado)) {
                 dot.append("    \"" + estadoLabel + "\" [shape=doublecircle];\n");
             }
             if (estado.equals(startState)) {
@@ -305,4 +327,107 @@ public class AFDGenerator {
             System.err.println("Error al generar el archivo PNG: " + e.getMessage());
         }
     }
+
+    public void generarCodigoLexer(String nombreArchivo) {
+        StringBuilder codigo = new StringBuilder();
+        codigo.append("import java.util.*;\n\n");
+        codigo.append("public class Lexer {\n");
+        codigo.append("    private String input;\n");
+        codigo.append("    private int position;\n");
+        codigo.append("    private static final Map<Integer, Map<Character, Integer>> transitionTable = new HashMap<>();\n");
+        codigo.append("    private static final Map<Integer, String> finalStates = new HashMap<>();\n\n");
+
+        // Construir la tabla de transiciones en el código generado
+        codigo.append("    static {\n");
+        for (Map.Entry<Set<Integer>, Map<String, Set<Integer>>> entry : transitions.entrySet()) {
+            Set<Integer> state = entry.getKey();  // El estado es un conjunto de enteros
+            Map<String, Set<Integer>> transitionsMap = entry.getValue();
+            codigo.append("        transitionTable.put(").append(state).append(", Map.of(");
+            List<String> transList = new ArrayList<>();
+            for (var t : transitions.entrySet()) {
+                transList.add("'" + t.getKey() + "', " + t.getValue());
+            }
+            codigo.append(String.join(", ", transList));
+            codigo.append("));\n");
+        }
+        codigo.append("    }\n\n");
+
+        // Estados de aceptación
+        codigo.append("    static {\n");
+        for (var entry : acceptedStates.entrySet()) {
+            codigo.append("        finalStates.put(").append(entry.getKey()).append(", \"").append(entry.getValue()).append("\");\n");
+        }
+        codigo.append("    }\n\n");
+
+        // Constructor del lexer
+        codigo.append("    public Lexer(String input) {\n");
+        codigo.append("        this.input = input;\n");
+        codigo.append("        this.position = 0;\n");
+        codigo.append("    }\n\n");
+
+        // Método tokenize()
+        codigo.append("    public List<Token> tokenize() {\n");
+        codigo.append("        List<Token> tokens = new ArrayList<>();\n");
+        codigo.append("        while (position < input.length()) {\n");
+        codigo.append("            Token token = nextToken();\n");
+        codigo.append("            if (token != null) {\n");
+        codigo.append("                tokens.add(token);\n");
+        codigo.append("            } else {\n");
+        codigo.append("                System.err.println(\"Error léxico en posición \" + position);\n");
+        codigo.append("                break;\n");
+        codigo.append("            }\n");
+        codigo.append("        }\n");
+        codigo.append("        return tokens;\n");
+        codigo.append("    }\n\n");
+
+        // Método nextToken()
+        codigo.append("    private Token nextToken() {\n");
+        codigo.append("        int state = 0;\n");
+        codigo.append("        int start = position;\n");
+        codigo.append("        while (position < input.length()) {\n");
+        codigo.append("            char current = input.charAt(position);\n");
+        codigo.append("            if (!transitionTable.containsKey(state) || !transitionTable.get(state).containsKey(current)) {\n");
+        codigo.append("                break;\n");
+        codigo.append("            }\n");
+        codigo.append("            state = transitionTable.get(state).get(current);\n");
+        codigo.append("            position++;\n");
+        codigo.append("        }\n");
+        codigo.append("        if (finalStates.containsKey(state)) {\n");
+        codigo.append("            return new Token(finalStates.get(state), input.substring(start, position));\n");
+        codigo.append("        }\n");
+        codigo.append("        return null;\n");
+        codigo.append("    }\n\n");
+
+        // Método main para prueba
+        codigo.append("    public static void main(String[] args) {\n");
+        codigo.append("        Lexer lexer = new Lexer(\"aabbcc\");\n");
+        codigo.append("        List<Token> tokens = lexer.tokenize();\n");
+        codigo.append("        tokens.forEach(System.out::println);\n");
+        codigo.append("    }\n");
+        codigo.append("}\n\n");
+
+        // Clase Token
+        codigo.append("class Token {\n");
+        codigo.append("    private String type;\n");
+        codigo.append("    private String value;\n\n");
+        codigo.append("    public Token(String type, String value) {\n");
+        codigo.append("        this.type = type;\n");
+        codigo.append("        this.value = value;\n");
+        codigo.append("    }\n\n");
+        codigo.append("    @Override\n");
+        codigo.append("    public String toString() {\n");
+        codigo.append("        return \"[\" + type + \": \\\"\" + value + \"\\\"]\";\n");
+        codigo.append("    }\n");
+        codigo.append("}\n");
+
+        // Escribir el archivo
+        try (FileWriter writer = new FileWriter(nombreArchivo)) {
+            writer.write(codigo.toString());
+            System.out.println("Archivo Lexer.java generado con éxito.");
+        } catch (IOException e) {
+            System.err.println("Error al escribir el archivo Lexer.java: " + e.getMessage());
+        }
+    }
+
+    
 }
