@@ -3,11 +3,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -334,37 +332,45 @@ public class AFDGenerator {
         codigo.append("public class Lexer {\n");
         codigo.append("    private String input;\n");
         codigo.append("    private int position;\n");
-        codigo.append("    private static final Map<Integer, Map<Character, Integer>> transitionTable = new HashMap<>();\n");
-        codigo.append("    private static final Map<Integer, String> finalStates = new HashMap<>();\n\n");
+        codigo.append("    private static final Map<Set<Integer>, Map<String, Set<Integer>>> transitionTable = new HashMap<>();\n");
+        codigo.append("    private static final Map<Set<Integer>, String> finalStates = new HashMap<>();\n\n");
+        codigo.append("    private static final Set<Integer> startState = new HashSet<>(Arrays.asList(")
+            .append(startState.toString().replaceAll("[\\[\\]]", ""))
+            .append("));\n\n");
 
-        // Construir la tabla de transiciones en el código generado
+        // Construcción de la tabla de transiciones
         codigo.append("    static {\n");
+        codigo.append("        Map<String, Set<Integer>> tempTransitions;\n");
         for (Map.Entry<Set<Integer>, Map<String, Set<Integer>>> entry : transitions.entrySet()) {
-            Set<Integer> state = entry.getKey();  // El estado es un conjunto de enteros
+            Set<Integer> state = entry.getKey();
             Map<String, Set<Integer>> transitionsMap = entry.getValue();
-            codigo.append("        transitionTable.put(").append(state).append(", Map.of(");
-            List<String> transList = new ArrayList<>();
-            for (var t : transitions.entrySet()) {
-                transList.add("'" + t.getKey() + "', " + t.getValue());
+            
+            codigo.append("        tempTransitions = new HashMap<>();\n");
+            for (var t : transitionsMap.entrySet()) {
+                codigo.append("        tempTransitions.put(\"").append(t.getKey()).append("\", new HashSet<>(Arrays.asList(")
+                      .append(t.getValue().toString().replaceAll("[\\[\\]]", "")).append(")));\n");
             }
-            codigo.append(String.join(", ", transList));
-            codigo.append("));\n");
+            codigo.append("        transitionTable.put(new HashSet<>(Arrays.asList(")
+                  .append(state.toString().replaceAll("[\\[\\]]", ""))
+                  .append(")), tempTransitions);\n");
         }
         codigo.append("    }\n\n");
-
+    
         // Estados de aceptación
         codigo.append("    static {\n");
         for (var entry : acceptedStates.entrySet()) {
-            codigo.append("        finalStates.put(").append(entry.getKey()).append(", \"").append(entry.getValue()).append("\");\n");
+            codigo.append("        finalStates.put(new HashSet<>(Arrays.asList(")
+                  .append(entry.getKey().toString().replaceAll("[\\[\\]]", ""))
+                  .append(")), \"").append(entry.getValue()).append("\");\n");
         }
         codigo.append("    }\n\n");
-
-        // Constructor del lexer
+    
+        // Constructor
         codigo.append("    public Lexer(String input) {\n");
         codigo.append("        this.input = input;\n");
         codigo.append("        this.position = 0;\n");
         codigo.append("    }\n\n");
-
+    
         // Método tokenize()
         codigo.append("    public List<Token> tokenize() {\n");
         codigo.append("        List<Token> tokens = new ArrayList<>();\n");
@@ -374,30 +380,39 @@ public class AFDGenerator {
         codigo.append("                tokens.add(token);\n");
         codigo.append("            } else {\n");
         codigo.append("                System.err.println(\"Error léxico en posición \" + position);\n");
-        codigo.append("                break;\n");
+        codigo.append("                position++;\n"); // Evitar bucles infinitos
         codigo.append("            }\n");
         codigo.append("        }\n");
         codigo.append("        return tokens;\n");
         codigo.append("    }\n\n");
-
+    
         // Método nextToken()
         codigo.append("    private Token nextToken() {\n");
-        codigo.append("        int state = 0;\n");
+        codigo.append("        Set<Integer> state = new HashSet<>(startState);\n");
         codigo.append("        int start = position;\n");
+        codigo.append("        int lastAcceptingPos = -1;\n");
+        codigo.append("        String lastAcceptingType = null;\n\n");
+    
         codigo.append("        while (position < input.length()) {\n");
-        codigo.append("            char current = input.charAt(position);\n");
+        codigo.append("            String current = String.valueOf(input.charAt(position));\n");
         codigo.append("            if (!transitionTable.containsKey(state) || !transitionTable.get(state).containsKey(current)) {\n");
         codigo.append("                break;\n");
         codigo.append("            }\n");
         codigo.append("            state = transitionTable.get(state).get(current);\n");
-        codigo.append("            position++;\n");
+        codigo.append("            position++;\n\n");
+    
+        codigo.append("            if (finalStates.containsKey(state)) {\n");
+        codigo.append("                lastAcceptingPos = position;\n");
+        codigo.append("                lastAcceptingType = finalStates.get(state);\n");
+        codigo.append("            }\n");
         codigo.append("        }\n");
-        codigo.append("        if (finalStates.containsKey(state)) {\n");
-        codigo.append("            return new Token(finalStates.get(state), input.substring(start, position));\n");
+        codigo.append("        if (lastAcceptingType != null) {\n");
+        codigo.append("            position = lastAcceptingPos;\n");
+        codigo.append("            return new Token(lastAcceptingType, input.substring(start, position));\n");
         codigo.append("        }\n");
         codigo.append("        return null;\n");
         codigo.append("    }\n\n");
-
+    
         // Método main para prueba
         codigo.append("    public static void main(String[] args) {\n");
         codigo.append("        Lexer lexer = new Lexer(\"aabbcc\");\n");
@@ -405,7 +420,7 @@ public class AFDGenerator {
         codigo.append("        tokens.forEach(System.out::println);\n");
         codigo.append("    }\n");
         codigo.append("}\n\n");
-
+    
         // Clase Token
         codigo.append("class Token {\n");
         codigo.append("    private String type;\n");
@@ -419,7 +434,7 @@ public class AFDGenerator {
         codigo.append("        return \"[\" + type + \": \\\"\" + value + \"\\\"]\";\n");
         codigo.append("    }\n");
         codigo.append("}\n");
-
+    
         // Escribir el archivo
         try (FileWriter writer = new FileWriter(nombreArchivo)) {
             writer.write(codigo.toString());
@@ -427,7 +442,6 @@ public class AFDGenerator {
         } catch (IOException e) {
             System.err.println("Error al escribir el archivo Lexer.java: " + e.getMessage());
         }
-    }
-
+    }    
     
 }
