@@ -1,0 +1,15 @@
+{
+import myToken;
+}
+
+rule getToken =
+    [' ' '\t']        { return "WHITESPACE"; } // Saltar espacios
+  | ['\n']           { return "EOL"; }
+  | ['0'-'9']+       { return "NUM"; }
+  | '+'              { return "PLUS"; }
+  | '-'              { return "MINUS"; }
+  | '*'              { return "TIMES"; }
+  | '/'              { return "DIV"; }
+  | '('              { return "LPAREN"; }
+  | ')'              { return "RPAREN"; }
+  | eof              { return "EOF"; }
