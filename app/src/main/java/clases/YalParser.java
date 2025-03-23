@@ -26,13 +26,14 @@ public class YalParser {
 
     private final List<Rule> rules = new ArrayList<>();
 
-    // Función para interpretar caracteres escapados
+    // Función para mantener los caracteres escapados en formato regex
     private String handleEscapedChars(String input) {
         return input
-                .replace("\\t", "\t")
-                .replace("\\n", "\n")
-                .replace("eof", "\\u0000");  // EOF se transforma a \u0000
+                .replace("eof", "\\u0000")  // Solo EOF se transforma
+                .replace("'", "")
+                .replaceAll("(\\(|\\)|\\+|\\*|\\/|\\-)", "\\\\$1"); // Solo escapar metacaracteres fuera de conjuntos
     }
+
 
     public List<Rule> parseYAL(String filepath) throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
@@ -40,7 +41,7 @@ public class YalParser {
             boolean inRuleSection = false;
 
             // Mejorado para detectar listas y rangos
-            Pattern pattern = Pattern.compile("([\\[\\]'a-zA-Z0-9\\-+*/()\\\\]+|eof)\\s*\\{\\s*return\\s*\"(\\w+)\";\\s*\\}");
+            Pattern pattern = Pattern.compile("((?:\\[[^\\]]*\\]|[a-zA-Z0-9+*/()\\\\'\\-]+|eof)+)\\s*\\{\\s*return\\s*\"(\\w+)\";\\s*\\}");
 
             while ((line = br.readLine()) != null) {
                 line = line.trim();
