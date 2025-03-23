@@ -17,75 +17,176 @@ public class RegexConverter {
     );
 
     /**
-     * Preprocesa la regex, agregando operadores de concatenación (`^`)
-     * y transformando los conjuntos como [0-9] en (0|1|2|...|9).
+     * Preprocesa la regex combinada:
+     * - Maneja secuencias escapadas (\t, \n, \u0000).
+     * - Expande rangos ([a-z] → (a|b|c|...|z)).
+     * - Transforma operadores como + → (exp)^(exp)*.
+     * - Respeta las etiquetas #n.
+     * - Inserta concatenaciones explícitas (^).
      */
     public static String preprocessRegex(String regex) {
         StringBuilder processed = new StringBuilder();
+        boolean insideCharClass = false; // Estamos dentro de [ ]
+
         for (int i = 0; i < regex.length(); i++) {
             char c = regex.charAt(i);
 
-            if (c == '+') {
-                int lastIndex = processed.length() - 1;
-    
-                // Find the start of the last complete sub-expression
-                if (processed.charAt(lastIndex) == ')') {
-                    int openParenIndex = lastIndex;
-                    int balance = 1;
-                    while (openParenIndex > 0 && balance > 0) {
-                        openParenIndex--;
-                        if (processed.charAt(openParenIndex) == ')') balance++;
-                        if (processed.charAt(openParenIndex) == '(') balance--;
-                    }
-        
-                    if (balance == 0) {
-                        processed.append("^").append(processed.substring(openParenIndex, lastIndex + 1)).append("*");
-                    }
-                } else {
-                    processed.append("^").append(processed.charAt(lastIndex)).append("*");
-                }
-            } else if (c == '?') {
-                processed.append("|ε");
-            } else if (c == '[') {
-                int j = i + 1;
+            // Detectar inicio de una clase de caracteres [ ]
+            // Detectar inicio de una clase de caracteres [ ]
+            if (c == '[') {
+                insideCharClass = true;
                 StringBuilder charSet = new StringBuilder("(");
-                while (j < regex.length() && regex.charAt(j) != ']') {
-                    if (j < regex.length() - 2 && regex.charAt(j + 1) == '-') {
-                        char start = regex.charAt(j);
-                        char end = regex.charAt(j + 2);
+
+                i++; // Saltar el '['
+
+                // Expandir contenido del conjunto
+                while (i < regex.length() && regex.charAt(i) != ']') {
+                    char currentChar = regex.charAt(i);
+
+                    // Manejar rangos: a-z o 0-9
+                    if (i + 2 < regex.length() && regex.charAt(i + 1) == '-') {
+                        char start = currentChar;
+                        char end = regex.charAt(i + 2);
+
                         for (char ch = start; ch <= end; ch++) {
                             charSet.append(ch).append("|");
                         }
-                        j += 3;
-                    } else {
-                        charSet.append(regex.charAt(j)).append("|");
-                        j++;
+                        i += 2; // Saltar el rango completo
                     }
+
+                    // Manejar secuencias escapadas (\t, \n, etc.)
+                    else if (currentChar == '\\' && i + 1 < regex.length()) {
+                        char next = regex.charAt(i + 1);
+                        if (next == 't' || next == 'n' || next == 'r' || next == '\\') {
+                            charSet.append("\\").append(next).append("|");
+                            i++; // Saltar el carácter escapado
+                        } else {
+                            charSet.append(currentChar).append("|");
+                        }
+                    }
+
+                    // Cualquier otro carácter normal
+                    else {
+                        charSet.append(currentChar).append("|");
+                    }
+                    i++;
                 }
+
+                // Limpiar el último `|`
                 if (charSet.charAt(charSet.length() - 1) == '|') {
                     charSet.deleteCharAt(charSet.length() - 1);
                 }
                 charSet.append(")");
                 processed.append(charSet);
-                i = j;
-            } else {
-                processed.append(c);
+
+                
+                insideCharClass = false;
+
+                continue;
             }
 
-            // Insertar operador de concatenación `^` cuando sea necesario
-            if (i < regex.length() - 1) {
+
+            // Detectar el fin de un conjunto
+            if (c == ']') {
+                insideCharClass = false;
+                continue;
+            }
+
+            // Manejar secuencias escapadas (\t, \n, \r, \\, \u0000)
+            if (c == '\\' && i + 1 < regex.length()) {
                 char next = regex.charAt(i + 1);
-                
-                // Agregar ^ entre dos símbolos que requieren concatenación
-                if ((Character.isLetterOrDigit(c) || c == '*' || c == '?' || c == ')' || c == ']' || c == '}' || c == '+') &&
-                    (Character.isLetterOrDigit(next) || next == '(')) {
-                    processed.append("^");
+
+                if (next == 't' || next == 'n' || next == 'r' || next == '\\') {
+                    processed.append("\\").append(next);
+                    i++;
+                    continue;
+                }
+
+                // Manejar secuencias Unicode (\u0000)
+                if (next == 'u' && i + 5 < regex.length() && regex.substring(i + 2, i + 6).matches("[0-9a-fA-F]{4}")) {
+                    processed.append("\\u").append(regex, i + 2, i + 6);
+                    i += 5;
+                    continue;
                 }
             }
 
+            // Si encuentra una etiqueta #n, la copia sin modificar
+            if (c == '#' && i + 1 < regex.length() && Character.isDigit(regex.charAt(i + 1))) {
+                processed.append(c);
+                while (i + 1 < regex.length() && Character.isDigit(regex.charAt(i + 1))) {
+                    processed.append(regex.charAt(++i));
+                }
+                continue;
+            }
+
+            // Manejar el operador +
+            else if (c == '+' && !insideCharClass) {
+                int lastIndex = processed.length() - 1;
+            
+                // Caso: si el último carácter es ')', buscamos el grupo completo
+                if (processed.charAt(lastIndex) == ')') {
+                    int openParenIndex = lastIndex;
+                    int balance = 1;
+            
+                    // Usar una pila para encontrar el paréntesis abierto correspondiente
+                    while (openParenIndex > 0 && balance > 0) {
+                        openParenIndex--;
+                        if (processed.charAt(openParenIndex) == ')') balance++;
+                        if (processed.charAt(openParenIndex) == '(') balance--;
+                    }
+            
+                    // Si encontramos el grupo correctamente, aplicamos la expansión
+                    if (balance == 0) {
+                        String subExpr = processed.substring(openParenIndex, lastIndex + 1);
+                        processed.append("^").append(subExpr).append("*");
+                    }
+                } 
+            
+                // Caso: si el último carácter es una secuencia escapada (como \d)
+                else if (processed.charAt(lastIndex) == '\\') {
+                    processed.append(c); // No modificar, ya está escapado
+                }
+            
+                // Caso: un solo carácter (como a+ → a^(a)*)
+                else {
+                    char prevChar = processed.charAt(lastIndex);
+                    processed.deleteCharAt(lastIndex); // Eliminamos el último carácter
+                    processed.append("(").append(prevChar).append(")").append("^(").append(prevChar).append(")*");
+                }
+            
+                continue; // Saltar al siguiente carácter
+            }
+            
+
+            // Manejar el operador ?
+            else if (c == '?' && !insideCharClass) {
+                processed.append("|ε");
+                continue;
+            }
+
+            // Copiar otros caracteres
+            processed.append(c);
+
+            // Insertar ^ para concatenación (fuera de [ ])
+            if (!insideCharClass && i < regex.length() - 1) {
+                char next = regex.charAt(i + 1);
+
+                if ((Character.isLetterOrDigit(c) || c == '*' || c == '?' || c == ')') &&
+                    (Character.isLetterOrDigit(next) || next == '(' || next == '\\')) {
+
+                    // No insertar ^ antes de una etiqueta #n
+                    if (!(next == '#' && (i + 2) < regex.length() && Character.isDigit(regex.charAt(i + 2)))) {
+                        processed.append("^");
+                    }
+                }
+            }
         }
-        return processed.append("^.").toString(); // Agregar punto final
+
+        // Agregar el dummy token final
+        return processed.append("^.").toString();
     }
+
+
 
     /**
      * Convierte una expresión regular infija a postfija usando Shunting Yard.
