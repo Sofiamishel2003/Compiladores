@@ -26,14 +26,59 @@ public class YalParser {
 
     private final List<Rule> rules = new ArrayList<>();
 
-    // Función para mantener los caracteres escapados en formato regex
     private String handleEscapedChars(String input) {
-        return input
-                .replace("eof", "\\u0000")  // Solo EOF se transforma
-                .replace("'", "")
-                .replaceAll("(\\(|\\)|\\+|\\*|\\/|\\-)", "\\\\$1"); // Solo escapar metacaracteres fuera de conjuntos
-    }
-
+        StringBuilder result = new StringBuilder();
+        boolean insideBrackets = false;   // Rastrea si estamos dentro de [ ]
+        boolean afterGroupOrSet = false;  // Rastrea si estamos después de ] o )
+    
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+    
+            // Detectar inicio y fin de un conjunto [ ]
+            if (c == '[') {
+                insideBrackets = true;
+            } else if (c == ']') {
+                insideBrackets = false;
+                afterGroupOrSet = true; // Estamos después de un conjunto
+            }
+    
+            // Detectar fin de un grupo ( )
+            if (c == ')') {
+                afterGroupOrSet = true; // Estamos después de un grupo
+            }
+    
+            // Reemplazar "eof" por \u0000
+            if (input.startsWith("eof", i)) {
+                result.append("\\u0000");
+                i += 2; // Saltar "of"
+                continue;
+            }
+    
+            // Escapar caracteres especiales si no estamos dentro de un conjunto [ ]
+            if (!insideBrackets) {
+                // Siempre escapar estos caracteres: ( ) / -
+                if ("()/-".indexOf(c) != -1) {
+                    result.append("\\");
+                }
+                // Escapar + o * solo si NO están después de ] o )
+                else if ((c == '+' || c == '*') && !afterGroupOrSet) {
+                    result.append("\\");
+                }
+            }
+    
+            // No añadir comillas simples
+            if (c != '\'') {
+                result.append(c);
+            }
+    
+            // Restablecer el estado después de cualquier carácter que no sea cuantificador
+            if (afterGroupOrSet && (c == '+' || c == '*')) {
+                afterGroupOrSet = false;
+            }
+        }
+    
+        return result.toString();
+    }        
 
     public List<Rule> parseYAL(String filepath) throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
