@@ -17,47 +17,41 @@ public class AFDGenerator {
     private Set<Set<Integer>> states;
     private Map<Set<Integer>, Map<String, Set<Integer>>> transitions;
     private Set<Integer> deadState;
-    //private Set<Set<Integer>> acceptedStates;
     private Map<Set<Integer>, String> acceptedStates;
 
     private Map<Set<Integer>, Integer> stateMapping;
     private Map<Set<Integer>, String> stateLabels;
+    private Map<Integer, String> positionToTokenMap;
 
-    public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState,
-            int acceptingPosition) {
+
+    public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState, Map<Integer, String> positionToTokenMap) {
         this.followpos = followpos;
         this.symbolTable = symbolTable;
         this.startState = startState;
         this.states = new HashSet<>();
         this.transitions = new HashMap<>();
         this.deadState = new HashSet<>();
-        //this.acceptedStates = new HashSet<>();
         this.acceptedStates = new HashMap<>();
         this.stateLabels = new HashMap<>();
+        this.positionToTokenMap = positionToTokenMap;
 
-        generateAFD(); // Generate the AFD and populate states and transitions
-        markAcceptedStates(acceptingPosition);
+        generateAFD();
+        markAcceptedStates(positionToTokenMap);
 
         generarCodigoLexer("Lexer.java");
     }
 
-    //private void markAcceptedStates(int acceptingPosition) {
-    //    for (Set<Integer> state : states) {
-    //        if (state.contains(acceptingPosition)) {
-    //            acceptedStates.add(state);
-    //        }
-    //    }
-    //}
-    private void markAcceptedStates(int acceptingPosition) {
+    private void markAcceptedStates(Map<Integer, String> positionToTokenMap) {
         for (Set<Integer> state : states) {
-            if (state.contains(acceptingPosition)) {
-                String tokenName = symbolTable.get(acceptingPosition);
-                acceptedStates.put(state, tokenName); // Asocia el estado con el token
+            for (int pos : state) {
+                if (positionToTokenMap.containsKey(pos)) {
+                    acceptedStates.put(state, positionToTokenMap.get(pos));
+                    break;
+                }
             }
         }
     }
     
-
     public void generateAFD() {
         Queue<Set<Integer>> queue = new LinkedList<>();
         queue.add(startState);
@@ -69,27 +63,20 @@ public class AFDGenerator {
 
             for (int position : currentState) {
                 String symbol = symbolTable.get(position);
-
-                if (symbol == null || symbol.equals("?") || symbol.equals("ε")) {
-                    // si el estado tiene un simbolo null deberia ir al deadstate
-                    for (String transitionSymbol : symbolTable.values()) {
-                        transitionMap.putIfAbsent(transitionSymbol, new HashSet<>());
-                        transitionMap.get(transitionSymbol).addAll(deadState); // todas las transiciones van al
-                                                                               // deadstate
-                    }
-                } else {
-                    // transiciones para simbolos validos
-                    transitionMap.putIfAbsent(symbol, new HashSet<>());
-                    transitionMap.get(symbol).addAll(followpos.get(position));
+                if (symbol == null || symbol.equals("?") || symbol.equals("ε") || symbol.startsWith("TOKEN_")) {
+                    continue; // ignora símbolos no válidos o etiquetas TOKEN_
                 }
 
+                transitionMap.putIfAbsent(symbol, new HashSet<>());
+                transitionMap.get(symbol).addAll(followpos.get(position));
             }
 
             if (currentState.isEmpty()) {
                 for (String symbol : symbolTable.values()) {
-                    // deadstate a si mismo para todas las transiciones
-                    transitionMap.putIfAbsent(symbol, new HashSet<>());
-                    transitionMap.get(symbol).addAll(currentState);
+                    if (!symbol.startsWith("TOKEN_")) {
+                        transitionMap.putIfAbsent(symbol, new HashSet<>());
+                        transitionMap.get(symbol).addAll(currentState);
+                    }
                 }
             }
 
