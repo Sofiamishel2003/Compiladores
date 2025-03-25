@@ -1,14 +1,22 @@
 package clases;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
 
 public class AFDGenerator {
     private Map<Integer, Set<Integer>> followpos;
@@ -287,12 +295,18 @@ public class AFDGenerator {
     }
 
     public void generarDot(String nombreBase) {
-        new File("media/other").mkdirs(); // Carpeta para los archivos DOT
-        new File("media/img").mkdirs(); // Carpeta para los archivos PNG
-        String dotFilePath = "media/other" + nombreBase + ".dot";
-        String pngFilePath = "media/img" + nombreBase + ".png";
-        System.out.println(pngFilePath);
+    try {
+        // Crear directorios si no existen
+        Path dotDir = Paths.get("media", "other");
+        Path imgDir = Paths.get("media", "img");
+        Files.createDirectories(dotDir);
+        Files.createDirectories(imgDir);
 
+        // Archivos de salida
+        Path dotFilePath = dotDir.resolve(nombreBase + ".dot");
+        Path pngFilePath = imgDir.resolve(nombreBase + ".png");
+
+        // Generar contenido DOT
         StringBuilder dot = new StringBuilder();
         dot.append("digraph AFD {\n");
         dot.append("    rankdir=LR;\n");
@@ -320,26 +334,34 @@ public class AFDGenerator {
 
         dot.append("}\n");
 
-        // Guardar el archivo DOT en media/other/
-        try (PrintWriter writer = new PrintWriter(dotFilePath)) {
-            writer.write(dot.toString());
-            System.out.println("Archivo DOT generado: " + dotFilePath);
-        } catch (IOException e) {
-            System.err.println("Error al escribir el archivo DOT: " + e.getMessage());
-            return;
+        // Escribir archivo DOT
+        Files.write(dotFilePath, dot.toString().getBytes(StandardCharsets.UTF_8));
+        System.out.println("✅ Archivo DOT generado en: " + dotFilePath.toAbsolutePath());
+
+        // Ejecutar Graphviz para generar PNG
+        ProcessBuilder pb = new ProcessBuilder("dot", "-Tpng", dotFilePath.toString(), "-o", pngFilePath.toString());
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                System.out.println("[graphviz] " + linea);
+            }
         }
 
-        // Generar PNG automáticamente en media/img/
-        try {
-            ProcessBuilder pb = new ProcessBuilder("dot", "-Tpng", dotFilePath, "-o", pngFilePath);
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            process.waitFor();
-            System.out.println("Imagen PNG generada: " + pngFilePath);
-        } catch (IOException | InterruptedException e) {
-            System.err.println("Error al generar el archivo PNG: " + e.getMessage());
+        int exitCode = process.waitFor();
+        if (exitCode == 0) {
+            System.out.println("🖼️ Imagen PNG generada en: " + pngFilePath.toAbsolutePath());
+        } else {
+            System.err.println("⚠️ Error al generar imagen PNG. Código de salida: " + exitCode);
         }
+
+    } catch (IOException | InterruptedException e) {
+        System.err.println("❌ Error al generar el grafo: " + e.getMessage());
+        Thread.currentThread().interrupt(); // buena práctica al capturar InterruptedException
     }
+}
 
     public void generarCodigoLexer(String nombreArchivo) {
         StringBuilder codigo = new StringBuilder();

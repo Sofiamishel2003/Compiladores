@@ -64,6 +64,11 @@ public class Main {
             // 10. Minimizar AFD (opcional pero recomendado)
             afd.minimizeAFD();
 
+            // 11. Imprimir AFD minimizado
+            afd.generarDot("afd_original");
+            afd.minimizeAFD();
+            afd.generarDot("afd_minimizado");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
