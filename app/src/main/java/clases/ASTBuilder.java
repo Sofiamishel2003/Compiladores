@@ -1,127 +1,89 @@
 package clases;
 
-import java.util.*;
 
+ 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+ 
 public class ASTBuilder {
     private String postfix;
     private int positionCounter = 1;
     private Map<Integer, Set<Integer>> followpos = new HashMap<>();
     private Map<Integer, String> symbolTable = new HashMap<>();
-    private Map<Integer, String> acceptingPositions = new HashMap<>();
-    int acceptingPosition = -1;
-
+    private Map<Integer, String> acceptingTypes = new HashMap<>(); // Almacena el tipo de cada #num
+    private Set<Integer> acceptingPositions = new HashSet<>(); // Ahora acepta múltiples posiciones
+    
     public ASTBuilder(String postfix) {
         this.postfix = postfix;
     }
 
     public ASTNode buildAST() {
         Stack<ASTNode> stack = new Stack<>();
-        List<String> tokens = tokenizePostfix();
-        System.out.println("Tokens:");
-        for (String t : tokens) {
-            System.out.print("[" + t + "] ");
-        }
-        System.out.println();
-        for (String token : tokens) {
-            switch (token) {
-                case "|":
-                case "^": {
-                    if (stack.size() < 2) throw new IllegalStateException("Faltan operandos para " + token);
-                    ASTNode right = stack.pop();
-                    ASTNode left = stack.pop();
-                    ASTNode op = new ASTNode(token, left, right);
-                    stack.push(op);
-                    break;
-                }
-                case "*": {
-                    if (stack.isEmpty()) throw new IllegalStateException("Falta operando para *");
-                    ASTNode child = stack.pop();
-                    stack.push(new ASTNode("*", child, null));
-                    break;
-                }
-                case "?": {
-                    ASTNode epsilon = new ASTNode("?", -1);
-                    epsilon.nullable = true;
-                    stack.push(epsilon);
-                    break;
-                }
-                default: {
-                    if (token.startsWith("#")) {
-                        String num = token.substring(1);
-                        if (stack.isEmpty()) throw new IllegalStateException("No hay nodo al que asociar el token " + token);
-                        ASTNode last = stack.pop();
-                        acceptingPositions.put(last.position, "TOKEN_" + num);
-                        symbolTable.put(last.position, "TOKEN_" + num);
-                        stack.push(last);
-                    } else {
-                        ASTNode leaf = new ASTNode(token, positionCounter);
-                        symbolTable.put(positionCounter, token);
-                        followpos.put(positionCounter, new HashSet<>());
-                        stack.push(leaf);
-                        positionCounter++;
-                    }
-                }
-            }
-        }
-
-        if (stack.size() != 1) {
-            throw new IllegalStateException("La postfix no se redujo a un solo árbol. Stack: " + stack);
-        }
-
-        return stack.pop();
-    }
-
-    private List<String> tokenizePostfix() {
-        List<String> tokens = new ArrayList<>();
-        StringBuilder current = new StringBuilder();
-    
+        boolean escaped = false;
         for (int i = 0; i < postfix.length(); i++) {
             char c = postfix.charAt(i);
         
-            // Escaped sequence
-            if (c == '\\') {
-                current.setLength(0);
-                current.append(c);
-                i++;
-                if (i < postfix.length()) {
-                    current.append(postfix.charAt(i));
-    
-                    // Handle unicode \u0000
-                    if (postfix.charAt(i) == 'u' && i + 4 < postfix.length()) {
-                        for (int j = 0; j < 4; j++) {
-                            i++;
-                            current.append(postfix.charAt(i));
-                        }
-                    }
+            if (escaped) {
+                if (c == 't') {
+                    c = '\t';
+                } else if (c == 'n') {
+                    c = '\n';
+                } else if (c == 'u' && i + 4 < postfix.length()) {
+                    // Procesar secuencias Unicode: \u0000
+                    c= '\u0000';
+                    i+=4;
                 }
-                tokens.add(current.toString());
-            }
-    
-            // Token number like #10
-            else if (c == '#') {
-                current.setLength(0);
-                current.append('#');
-                i++;
-                while (i < postfix.length() && Character.isDigit(postfix.charAt(i))) {
-                    current.append(postfix.charAt(i));
+        
+                // Crear una hoja con el carácter escapado o Unicode
+                ASTNode leaf = new ASTNode(String.valueOf(c), positionCounter);
+                symbolTable.put(positionCounter, String.valueOf(c));
+                followpos.put(positionCounter, new HashSet<>());
+                stack.push(leaf);
+        
+                positionCounter++;
+                escaped = false;  // Resetear la bandera
+            } else if (c == '/' || c == '\\') {
+                escaped = true;  // Marcar para procesar el siguiente carácter como especial
+            } else if (c == '?' || c == 'ε') {
+                // Nodo epsilon
+                ASTNode epsilonNode = new ASTNode("?", -1);
+                epsilonNode.nullable = true;
+                stack.push(epsilonNode);
+            } else if (c == '|' || c == '^') {
+                ASTNode right = stack.pop();
+                ASTNode left = stack.pop();
+                stack.push(new ASTNode(String.valueOf(c), left, right));
+            } else if (c == '*') {
+                ASTNode child = stack.pop();
+                stack.push(new ASTNode("*", child, null));
+            } else if (c == '#') {
+                // Procesar #num (posición de aceptación con tipo)
+                int start = i + 1;
+                while (i + 1 < postfix.length() && Character.isDigit(postfix.charAt(i + 1))) {
                     i++;
                 }
-                i--; // rollback one char after last digit
-                tokens.add(current.toString());
-            }
-    
-            // Operators or other characters
-            else if ("|^*?.".indexOf(c) != -1) {
-                tokens.add(String.valueOf(c));
+                int acceptNum = Integer.parseInt(postfix.substring(start, i + 1));
+                acceptingPositions.add(positionCounter);
+                acceptingTypes.put(positionCounter, "TYPE_" + acceptNum); // Almacena el tipo
+                
+                ASTNode leaf = new ASTNode("#" + acceptNum, positionCounter);
+                symbolTable.put(positionCounter, "#" + acceptNum);
+                followpos.put(positionCounter, new HashSet<>());
+                stack.push(leaf);
+                positionCounter++;
             } else {
-                tokens.add(String.valueOf(c));
+                // Cualquier otro carácter normal
+                ASTNode leaf = new ASTNode(String.valueOf(c), positionCounter);
+                symbolTable.put(positionCounter, String.valueOf(c));
+                followpos.put(positionCounter, new HashSet<>());
+                stack.push(leaf);
+                positionCounter++;
             }
-        }
-    
-        return tokens;
+        }        
+        return stack.pop();
     }
-    
-    
 
     public void computeNullableFirstLast(ASTNode node) {
         if (node == null) return;
@@ -130,10 +92,8 @@ public class ASTBuilder {
 
         if (node.position != -1) {
             node.nullable = false;
-            node.firstpos.add(node.position);
-            node.lastpos.add(node.position);
         } else if (node.value.equals("?")) {
-            node.nullable = true;
+            node.nullable = true;  // Siempre nullable
         } else if (node.value.equals("|")) {
             node.nullable = node.left.nullable || node.right.nullable;
             node.firstpos.addAll(node.left.firstpos);
@@ -187,11 +147,11 @@ public class ASTBuilder {
         return root.firstpos; 
     }
 
-    public int getAcceptingPosition() {
-        return acceptingPosition;
+    public Map<Integer, String> getAcceptingTypes() {
+        return acceptingTypes;
     }
 
-    public Map<Integer, String> getAcceptingPositions() {
+    public Set<Integer> getAcceptingPositions() {
         return acceptingPositions;
     }
 }

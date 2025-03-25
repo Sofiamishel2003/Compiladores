@@ -172,18 +172,14 @@ public class RegexConverter {
                 char next = regex.charAt(i + 1);
 
                 if ((Character.isLetterOrDigit(c) || c == '*' || c == '?' || c == ')') &&
-                    (Character.isLetterOrDigit(next) || next == '(' || next == '\\')) {
-
-                    // No insertar ^ antes de una etiqueta #n
-                    if (!(next == '#' && (i + 2) < regex.length() && Character.isDigit(regex.charAt(i + 2)))) {
-                        processed.append("^");
-                    }
-                }
+                (Character.isLetterOrDigit(next) || next == '(' || next == '\\' || next == '#')) {
+                processed.append("^");
+    }
             }
         }
 
         // Agregar el dummy token final
-        return processed.append("^.").toString();
+        return processed.toString();
     }
 
 
