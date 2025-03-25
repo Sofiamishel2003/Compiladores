@@ -10,15 +10,18 @@ El sistema toma expresiones regulares (con una sintaxis estilo Yalex), las convi
 
 - Java (JDK 17+ recomendado)
 - Graphviz (opcional, para visualización del AFD en `.dot` y `.png`)
+  
 ---
+
 ## Pre-Requisito
-# Windows
+### Windows
 1. Descargar Graphviz en este link: https://graphviz.org/download/ 
 2. Agregar el /bin a las variables de entorno y reiniciar la computadora
-# MAC
+### MAC
 ```java
 brew install graphviz 
 ```
+---
 
 
 ## 🔄 Flujo del Programa
