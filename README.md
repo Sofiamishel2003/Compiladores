@@ -11,23 +11,15 @@ El sistema toma expresiones regulares (con una sintaxis estilo Yalex), las convi
 - Java (JDK 17+ recomendado)
 - Graphviz (opcional, para visualización del AFD en `.dot` y `.png`)
 ---
-
-## 📁 Estructura del Proyecto
-
-```
-├── Main.java                 // Punto de entrada, ejecuta el pipeline completo
-├── RegexConverter.java      // Convierte expresiones regulares a notación postfix
-├── ASTBuilder.java          // Construye el árbol de sintaxis abstracta desde postfix
-├── ASTNode.java             // Representa nodos del AST y calcula propiedades
-├── AFDGenerator.java        // Construye el AFD a partir del followpos
-├── Lexer.java               // Lexer generado automáticamente con código fuente
-├── YalParser.java           // Parser del archivo de entrada estilo Yalex
-├── Symbol.java              // Representa símbolos con sus regex y tipo
-├── Stack.java               // Implementación básica de pila para postfix
-└── lexer.yal                // Archivo con las definiciones de tokens
+## Pre-Requisito
+# Windows
+1. Descargar Graphviz en este link: https://graphviz.org/download/ 
+2. Agregar el /bin a las variables de entorno y reiniciar la computadora
+# MAC
+```java
+brew install graphviz 
 ```
 
----
 
 ## 🔄 Flujo del Programa
 
@@ -111,15 +103,3 @@ System.out.println(lexer.tokenize());
 Los autómatas generados por el compilador se almacenan en los siguientes formatos:
 
 ![image](https://github.com/user-attachments/assets/41b3ff19-ce11-4021-a8ad-c64bb058d891)
-
-
-## 📌 Consideraciones
-
-- El lexer generado asume que **todos los tokens terminan en un símbolo `#n`**, el cual representa la posición de aceptación.
-- El símbolo especial `\u0000` se utiliza como **EOF** en este lexer.
-- El lexer maneja correctamente los caracteres especiales escapados como `\n` y `\t`.
-- Si se desea probar con archivos más grandes o complejos, simplemente actualiza el input en `Lexer lexer = new Lexer(...)`.
-
----
-
-¿Deseas que también te genere el README como archivo `.md` o deseas integrarlo al proyecto automáticamente?
