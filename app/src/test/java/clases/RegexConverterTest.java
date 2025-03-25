@@ -8,13 +8,13 @@ public class RegexConverterTest {
   @Test
   public void testToPostfix_fuzzedExpressions() {
     String[][] cases = {
-        { "a|b", "ab.^|" },
-        { "a*b", "a*b^.^" },
-        { "(a|b)*", "ab|*.^" },
-        { "a^b|c", "ab^c.^|" },
-        { "(a)", "a.^" },
-        { "a+b", "aab*^.^" },
-        { "[0-2]", "01|2|.^" }
+        { "a|b", "ab|" },
+        { "a*b", "a*b^" },
+        { "(a|b)*", "ab|*" },
+        { "a^b|c", "ab^c|" },
+        { "(a)", "a" },
+        { "a+b", "aab*^" },
+        { "[0-2]", "01|2|" }
     };
 
     for (int i = 0; i < cases.length; i++) {
