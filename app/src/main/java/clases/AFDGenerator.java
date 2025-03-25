@@ -310,13 +310,20 @@ public class AFDGenerator {
             codigo.append("        tempTransitions = new HashMap<>();\n");
             for (Map.Entry<String, Set<Integer>> t : transitionsMap.entrySet()) {
                 String key = t.getKey();
-                if (key == null) continue; // seguridad extra
+                if (key == null || key.equals("null")) continue; // Evitar null
+            
+                // Escape especial para saltos de línea y tabulación
+                if (key.equals("\n")) key = "\\n";
+                else if (key.equals("\t")) key = "\\t";
+                else if (key.equals("\r")) key = "\\r";
+                else if (key.equals("\u0000")) key = "\\u0000";
+            
                 codigo.append("        tempTransitions.put(\"")
-                      .append(t.getKey().replace("\\", "\\\\").replace("\"", "\\\""))
+                      .append(key.replace("\\", "\\\\").replace("\"", "\\\""))
                       .append("\", new HashSet<>(Arrays.asList(")
                       .append(t.getValue().toString().replaceAll("[\\[\\]]", ""))
                       .append(")));\n");
-            }
+            }            
             codigo.append("        transitionTable.put(new HashSet<>(Arrays.asList(")
                   .append(state.toString().replaceAll("[\\[\\]]", ""))
                   .append(")), tempTransitions);\n");

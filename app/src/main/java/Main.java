@@ -48,7 +48,23 @@ public class Main {
             AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState, acceptingPosition);
 
             // 7. Generar el archivo Lexer.java
-            afd.generarCodigoLexer("Lexer.java", astBuilder.getAcceptingTypes());
+            // Mapeo de TYPE_n -> nombre de token como PLUS, NUM, etc.
+            Map<Integer, String> typeToName = new HashMap<>();
+            for (int i = 0; i < rules.size(); i++) {
+                typeToName.put(i + 1, rules.get(i).action); // TYPE_1 -> WHITESPACE, etc.
+            }
+            Map<Integer, String> acceptingTypes = astBuilder.getAcceptingTypes();
+            Map<Integer, String> acceptingTypesResolved = new HashMap<>();
+            
+            for (Map.Entry<Integer, String> entry : acceptingTypes.entrySet()) {
+                String type = entry.getValue(); // Ej: "TYPE_3"
+                if (type.startsWith("TYPE_")) {
+                    int typeNum = Integer.parseInt(type.substring(5));
+                    String realName = typeToName.getOrDefault(typeNum, type);
+                    acceptingTypesResolved.put(entry.getKey(), realName);
+                }
+            }
+            afd.generarCodigoLexer("app/Lexer.java", acceptingTypesResolved);
             // 8. Imprimir AFD
             System.out.println("\nAFD generado:");
             afd.printAFD();
