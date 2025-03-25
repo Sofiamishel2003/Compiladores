@@ -7,6 +7,7 @@ import java.util.Map;
 import clases.AFDGenerator;
 import clases.ASTBuilder;
 import clases.ASTNode;
+import clases.Lexer;
 import clases.RegexConverter;
 import clases.YalParser;
 
@@ -64,12 +65,16 @@ public class Main {
                     acceptingTypesResolved.put(entry.getKey(), realName);
                 }
             }
-            afd.generarCodigoLexer("app/Lexer.java", acceptingTypesResolved);
+            afd.generarCodigoLexer("Compiladores/app/src/main/java/clases/Lexer.java", acceptingTypesResolved);
             // 8. Imprimir AFD
             System.out.println("\nAFD generado:");
             afd.printAFD();
             afd.generarDot("afd_" + combinedRegex.hashCode() + ".dot");
 
+            Lexer lexer = new Lexer("1+2");
+            for (Lexer.Token token : lexer.tokenize()){
+                System.out.println(token);
+            }
             // 10. Minimizar AFD (opcional pero recomendado)
             //afd.minimizeAFD();
 

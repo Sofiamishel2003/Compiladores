@@ -289,6 +289,7 @@ public class AFDGenerator {
     }
     public void generarCodigoLexer(String nombreArchivo, Map<Integer, String> acceptingTypes) {
         StringBuilder codigo = new StringBuilder();
+        codigo.append("package clases;\n\n");
         codigo.append("import java.util.*;\n\n");
         codigo.append("public class Lexer {\n");
         codigo.append("    private String input;\n");
