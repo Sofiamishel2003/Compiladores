@@ -20,6 +20,7 @@ dependencies {
     // This dependency is used by the application.
     implementation libs.guava
     implementation 'com.google.code.gson:gson:2.8.9'
+    implementation 'guru.nidi:graphviz-java:0.18.1'
 }
 
 testing {

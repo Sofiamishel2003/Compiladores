@@ -1,14 +1,22 @@
 package clases;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
 
 public class AFDGenerator {
     private Map<Integer, Set<Integer>> followpos;
@@ -245,26 +253,60 @@ public class AFDGenerator {
     }
 
     public boolean verificarCadena(String cadena) {
-        Set<Integer> estadoActual = startState; // Iniciar en el estado inicial
+        Set<Integer> estadoActual = startState; // Estado inicial
+        System.out.println("\n[🔍 Verificando cadena: \"" + cadena + "\"]");
+        System.out.println("→ Estado inicial: " + estadoActual);
 
-        for (char simbolo : cadena.toCharArray()) {
+        for (int i = 0; i < cadena.length(); i++) {
+            char simbolo = cadena.charAt(i);
             String simboloStr = String.valueOf(simbolo);
-            if (!transitions.containsKey(estadoActual) || !transitions.get(estadoActual).containsKey(simboloStr)) {
-                return false; // No hay transición para el símbolo, la cadena no es aceptada
+
+            System.out.printf("  [%d] '%s' ", i, simboloStr);
+
+            if (!transitions.containsKey(estadoActual)) {
+                System.out.println("No hay transiciones desde este estado.");
+                return false;
             }
-            estadoActual = transitions.get(estadoActual).get(simboloStr); // Mover al siguiente estado
+
+            Map<String, Set<Integer>> mapa = transitions.get(estadoActual);
+            if (!mapa.containsKey(simboloStr)) {
+                System.out.println("No hay transición con símbolo '" + simboloStr + "'");
+                return false;
+            }
+
+            Set<Integer> siguienteEstado = mapa.get(simboloStr);
+            System.out.println("→ " + siguienteEstado);
+
+            estadoActual = siguienteEstado;
         }
 
-        return acceptedStates.containsKey(estadoActual); // Verificar si el estado final es de aceptación
+        System.out.println("→ Estado final: " + estadoActual);
+
+        for (Set<Integer> estadoAceptado : acceptedStates.keySet()) {
+            if (estadoAceptado.equals(estadoActual)) {
+                String token = acceptedStates.get(estadoAceptado);
+                System.out.println("Estado de aceptación. Token reconocido: " + token);
+                return true;
+            }
+        }
+
+        System.out.println("Estado no aceptado.");
+        return false;
     }
 
     public void generarDot(String nombreBase) {
-        new File("media/other").mkdirs(); // Carpeta para los archivos DOT
-        new File("media/img").mkdirs(); // Carpeta para los archivos PNG
-        String dotFilePath = "media/other" + nombreBase + ".dot";
-        String pngFilePath = "media/img" + nombreBase + ".png";
-        System.out.println(pngFilePath);
+    try {
+        // Crear directorios si no existen
+        Path dotDir = Paths.get("media", "other");
+        Path imgDir = Paths.get("media", "img");
+        Files.createDirectories(dotDir);
+        Files.createDirectories(imgDir);
 
+        // Archivos de salida
+        Path dotFilePath = dotDir.resolve(nombreBase + ".dot");
+        Path pngFilePath = imgDir.resolve(nombreBase + ".png");
+
+        // Generar contenido DOT
         StringBuilder dot = new StringBuilder();
         dot.append("digraph AFD {\n");
         dot.append("    rankdir=LR;\n");
@@ -292,26 +334,34 @@ public class AFDGenerator {
 
         dot.append("}\n");
 
-        // Guardar el archivo DOT en media/other/
-        try (PrintWriter writer = new PrintWriter(dotFilePath)) {
-            writer.write(dot.toString());
-            System.out.println("Archivo DOT generado: " + dotFilePath);
-        } catch (IOException e) {
-            System.err.println("Error al escribir el archivo DOT: " + e.getMessage());
-            return;
+        // Escribir archivo DOT
+        Files.write(dotFilePath, dot.toString().getBytes(StandardCharsets.UTF_8));
+        System.out.println("✅ Archivo DOT generado en: " + dotFilePath.toAbsolutePath());
+
+        // Ejecutar Graphviz para generar PNG
+        ProcessBuilder pb = new ProcessBuilder("dot", "-Tpng", dotFilePath.toString(), "-o", pngFilePath.toString());
+        pb.redirectErrorStream(true);
+        Process process = pb.start();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                System.out.println("[graphviz] " + linea);
+            }
         }
 
-        // Generar PNG automáticamente en media/img/
-        try {
-            ProcessBuilder pb = new ProcessBuilder("dot", "-Tpng", dotFilePath, "-o", pngFilePath);
-            pb.redirectErrorStream(true);
-            Process process = pb.start();
-            process.waitFor();
-            System.out.println("Imagen PNG generada: " + pngFilePath);
-        } catch (IOException | InterruptedException e) {
-            System.err.println("Error al generar el archivo PNG: " + e.getMessage());
+        int exitCode = process.waitFor();
+        if (exitCode == 0) {
+            System.out.println("🖼️ Imagen PNG generada en: " + pngFilePath.toAbsolutePath());
+        } else {
+            System.err.println("⚠️ Error al generar imagen PNG. Código de salida: " + exitCode);
         }
+
+    } catch (IOException | InterruptedException e) {
+        System.err.println("❌ Error al generar el grafo: " + e.getMessage());
+        Thread.currentThread().interrupt(); // buena práctica al capturar InterruptedException
     }
+}
 
     public void generarCodigoLexer(String nombreArchivo) {
         StringBuilder codigo = new StringBuilder();
