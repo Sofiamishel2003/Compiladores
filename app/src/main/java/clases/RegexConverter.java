@@ -41,47 +41,48 @@ public class RegexConverter {
 
                 // Expandir contenido del conjunto
                 while (i < regex.length() && regex.charAt(i) != ']') {
-                    char currentChar = regex.charAt(i);
-
-                    // Manejar rangos: a-z o 0-9
-                    if (i + 2 < regex.length() && regex.charAt(i + 1) == '-') {
-                        char start = currentChar;
-                        char end = regex.charAt(i + 2);
-
+                    if (i + 6 < regex.length()
+                            && regex.charAt(i) == '\''
+                            && regex.charAt(i + 2) == '\''
+                            && regex.charAt(i + 3) == '-'
+                            && regex.charAt(i + 5) == '\''
+                            && regex.charAt(i + 6) != ']') {
+                        char start = regex.charAt(i + 1);
+                        char end = regex.charAt(i + 4);
                         for (char ch = start; ch <= end; ch++) {
                             charSet.append(ch).append("|");
                         }
-                        i += 2; // Saltar el rango completo
+                        i += 6;
                     }
-
-                    // Manejar secuencias escapadas (\t, \n, etc.)
-                    else if (currentChar == '\\' && i + 1 < regex.length()) {
-                        char next = regex.charAt(i + 1);
-                        if (next == 't' || next == 'n' || next == 'r' || next == '\\') {
-                            charSet.append("\\").append(next).append("|");
-                            i++; // Saltar el carácter escapado
-                        } else {
-                            charSet.append(currentChar).append("|");
+                    // Rango sin comillas como: 0-9
+                    else if (i + 2 < regex.length() && regex.charAt(i + 1) == '-') {
+                        char start = regex.charAt(i);
+                        char end = regex.charAt(i + 2);
+                        for (char ch = start; ch <= end; ch++) {
+                            charSet.append(ch).append("|");
                         }
+                        i += 2;
                     }
-
-                    // Cualquier otro carácter normal
-                    else {
-                        charSet.append(currentChar).append("|");
+                    // Escapados como \t, \n
+                    else if (regex.charAt(i) == '\\' && i + 1 < regex.length()) {
+                        charSet.append("\\").append(regex.charAt(i + 1)).append("|");
+                        i++;
+                    }
+                    // Ignorar comillas simples
+                    else if (regex.charAt(i) != '\'') {
+                        charSet.append(regex.charAt(i)).append("|");
                     }
                     i++;
                 }
 
-                // Limpiar el último `|`
+                // Limpiar el último |
                 if (charSet.charAt(charSet.length() - 1) == '|') {
                     charSet.deleteCharAt(charSet.length() - 1);
                 }
+
                 charSet.append(")");
                 processed.append(charSet);
-
-                
                 insideCharClass = false;
-
                 continue;
             }
 

@@ -245,17 +245,45 @@ public class AFDGenerator {
     }
 
     public boolean verificarCadena(String cadena) {
-        Set<Integer> estadoActual = startState; // Iniciar en el estado inicial
+        Set<Integer> estadoActual = startState; // Estado inicial
+        System.out.println("\n[🔍 Verificando cadena: \"" + cadena + "\"]");
+        System.out.println("→ Estado inicial: " + estadoActual);
 
-        for (char simbolo : cadena.toCharArray()) {
+        for (int i = 0; i < cadena.length(); i++) {
+            char simbolo = cadena.charAt(i);
             String simboloStr = String.valueOf(simbolo);
-            if (!transitions.containsKey(estadoActual) || !transitions.get(estadoActual).containsKey(simboloStr)) {
-                return false; // No hay transición para el símbolo, la cadena no es aceptada
+
+            System.out.printf("  [%d] '%s' ", i, simboloStr);
+
+            if (!transitions.containsKey(estadoActual)) {
+                System.out.println("No hay transiciones desde este estado.");
+                return false;
             }
-            estadoActual = transitions.get(estadoActual).get(simboloStr); // Mover al siguiente estado
+
+            Map<String, Set<Integer>> mapa = transitions.get(estadoActual);
+            if (!mapa.containsKey(simboloStr)) {
+                System.out.println("No hay transición con símbolo '" + simboloStr + "'");
+                return false;
+            }
+
+            Set<Integer> siguienteEstado = mapa.get(simboloStr);
+            System.out.println("→ " + siguienteEstado);
+
+            estadoActual = siguienteEstado;
         }
 
-        return acceptedStates.containsKey(estadoActual); // Verificar si el estado final es de aceptación
+        System.out.println("→ Estado final: " + estadoActual);
+
+        for (Set<Integer> estadoAceptado : acceptedStates.keySet()) {
+            if (estadoAceptado.equals(estadoActual)) {
+                String token = acceptedStates.get(estadoAceptado);
+                System.out.println("Estado de aceptación. Token reconocido: " + token);
+                return true;
+            }
+        }
+
+        System.out.println("Estado no aceptado.");
+        return false;
     }
 
     public void generarDot(String nombreBase) {
