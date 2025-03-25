@@ -6,38 +6,55 @@ public class Lexer {
     private static final Map<Set<Integer>, Map<String, Set<Integer>>> transitionTable = new HashMap<>();
     private static final Map<Set<Integer>, String> finalStates = new HashMap<>();
 
-    private static final Set<Integer> startState = new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
+    private static final Set<Integer> startState = new HashSet<>(Arrays.asList(32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 25, 26, 27, 28, 29, 30, 31));
 
     static {
         Map<String, Set<Integer>> tempTransitions;
         tempTransitions = new HashMap<>();
-        tempTransitions.put("0", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("1", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("2", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("3", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("4", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("5", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("6", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("7", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("8", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("9", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        transitionTable.put(new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)), tempTransitions);
+        tempTransitions.put(" ", new HashSet<>(Arrays.asList()));
+        tempTransitions.put(".", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("0", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("1", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("2", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("3", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("4", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("5", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("6", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("7", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("\t", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("8", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("9", new HashSet<>(Arrays.asList()));
+        transitionTable.put(new HashSet<>(Arrays.asList()), tempTransitions);
         tempTransitions = new HashMap<>();
-        tempTransitions.put("0", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("1", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("2", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("3", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("4", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("5", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("6", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("7", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("8", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        tempTransitions.put("9", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)));
-        transitionTable.put(new HashSet<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)), tempTransitions);
+        tempTransitions.put("0", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("1", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("2", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("3", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("4", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("5", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("6", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("7", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("8", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("9", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        transitionTable.put(new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)), tempTransitions);
+        tempTransitions = new HashMap<>();
+        tempTransitions.put(" ", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("0", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("1", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("2", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("3", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("4", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("5", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("6", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("7", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("\t", new HashSet<>(Arrays.asList()));
+        tempTransitions.put("8", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        tempTransitions.put("9", new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 22, 23, 24, 15)));
+        transitionTable.put(new HashSet<>(Arrays.asList(32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 25, 26, 27, 28, 29, 30, 31)), tempTransitions);
     }
 
     static {
-        finalStates.put(new HashSet<>(Arrays.asList(16, 17, 18, 19, 20, 21, 11, 12, 13, 14, 15)), "null");
+        finalStates.put(new HashSet<>(Arrays.asList(32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 25, 26, 27, 28, 29, 30, 31)), "EOL");
     }
 
     public Lexer(String input) {
