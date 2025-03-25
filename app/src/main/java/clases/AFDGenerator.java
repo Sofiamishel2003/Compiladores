@@ -1,120 +1,104 @@
 package clases;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
 
 public class AFDGenerator {
     private Map<Integer, Set<Integer>> followpos;
-    private Map<Integer, String> symbolTable;
-    private Set<Integer> startState;
-    private Set<Set<Integer>> states;
-    private Map<Set<Integer>, Map<String, Set<Integer>>> transitions;
-    private Set<Integer> deadState;
-    private Map<Set<Integer>, String> acceptedStates;
-
-    private Map<Set<Integer>, Integer> stateMapping;
-    private Map<Set<Integer>, String> stateLabels;
-    private Map<Integer, String> positionToTokenMap;
-
-
-    public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState, Map<Integer, String> positionToTokenMap) {
-        this.followpos = followpos;
-        this.symbolTable = symbolTable;
-        this.startState = startState;
-        this.states = new HashSet<>();
-        this.transitions = new HashMap<>();
-        this.deadState = new HashSet<>();
-        this.acceptedStates = new HashMap<>();
-        this.stateLabels = new HashMap<>();
-        this.positionToTokenMap = positionToTokenMap;
-
-        generateAFD();
-        markAcceptedStates(positionToTokenMap);
-
-        generarCodigoLexer("Lexer.java");
-    }
-
-    private void markAcceptedStates(Map<Integer, String> positionToTokenMap) {
+     private Map<Integer, String> symbolTable;
+     private Set<Integer> startState;
+     private Set<Set<Integer>> states;
+     private Map<Set<Integer>, Map<String, Set<Integer>>> transitions;
+     private Set<Integer> deadState;
+     private Set<Set<Integer>> acceptedStates;
+     private Map<Set<Integer>, Integer> stateMapping; 
+ 
+     public AFDGenerator(Map<Integer, Set<Integer>> followpos, Map<Integer, String> symbolTable, Set<Integer> startState, Set<Integer> acceptingPositions) {
+         this.followpos = followpos;
+         this.symbolTable = symbolTable;
+         this.startState = startState;
+         this.states = new HashSet<>();
+         this.transitions = new HashMap<>();
+         this.deadState = new HashSet<>();this.acceptedStates = new HashSet<>();
+ 
+         generateAFD();  // Generate the AFD and populate states and transitions
+         markAcceptedStates(acceptingPositions);
+     }
+ 
+     private void markAcceptedStates(Set<Integer> acceptingPositions) {
         for (Set<Integer> state : states) {
-            for (int pos : state) {
-                if (positionToTokenMap.containsKey(pos)) {
-                    acceptedStates.put(state, positionToTokenMap.get(pos));
+            for (int pos : acceptingPositions) {
+                if (state.contains(pos)) {
+                    acceptedStates.add(state);
                     break;
                 }
             }
         }
     }
     
-    public void generateAFD() {
-        Queue<Set<Integer>> queue = new LinkedList<>();
-        queue.add(startState);
-        states.add(startState);
-
-        while (!queue.isEmpty()) {
-            Set<Integer> currentState = queue.poll();
-            Map<String, Set<Integer>> transitionMap = new HashMap<>();
-
-            for (int position : currentState) {
-                String symbol = symbolTable.get(position);
-                if (symbol == null || symbol.equals("?") || symbol.equals("ε") || symbol.startsWith("TOKEN_")) {
-                    continue; // ignora símbolos no válidos o etiquetas TOKEN_
-                }
-
-                transitionMap.putIfAbsent(symbol, new HashSet<>());
-                transitionMap.get(symbol).addAll(followpos.get(position));
-            }
-
-            if (currentState.isEmpty()) {
-                for (String symbol : symbolTable.values()) {
-                    if (!symbol.startsWith("TOKEN_")) {
-                        transitionMap.putIfAbsent(symbol, new HashSet<>());
-                        transitionMap.get(symbol).addAll(currentState);
+     public void generateAFD() {
+         Queue<Set<Integer>> queue = new LinkedList<>();
+         queue.add(startState);
+         states.add(startState);
+ 
+         while (!queue.isEmpty()) {
+             Set<Integer> currentState = queue.poll();
+             Map<String, Set<Integer>> transitionMap = new HashMap<>();
+ 
+             for (int position : currentState) {
+                 String symbol = symbolTable.get(position);
+                 if (symbol == null || symbol.equals("?") || symbol.equals("ε")) {
+                    // If the state has a null symbol, it should transition to the dead state for all symbols
+                    for (String transitionSymbol : symbolTable.values()) {
+                        transitionMap.putIfAbsent(transitionSymbol, new HashSet<>());
+                        transitionMap.get(transitionSymbol).addAll(deadState);  // All transitions go to the dead state
                     }
+                    } else {
+                        // Normal transition for valid symbols
+                        transitionMap.putIfAbsent(symbol, new HashSet<>());
+                        transitionMap.get(symbol).addAll(followpos.get(position));
+                    }
+             }
+             if (currentState.isEmpty()) {
+                for (String symbol : symbolTable.values()) {
+                    // Add transitions from the empty state to itself for all symbols
+                    transitionMap.putIfAbsent(symbol, new HashSet<>());
+                    transitionMap.get(symbol).addAll(currentState);  // Empty state transitions to itself
                 }
             }
-
-            transitions.put(currentState, transitionMap);
-
-            for (Set<Integer> newState : transitionMap.values()) {
-                if (!states.contains(newState)) {
-                    states.add(newState);
-                    queue.add(newState);
-                }
-            }
-        }
-    }
-
-    /** MINIMIZACION USANDO HOPCROFT'S ALGORITHM **/
+ 
+             transitions.put(currentState, transitionMap);
+ 
+             for (Set<Integer> newState : transitionMap.values()) {
+                 if (!states.contains(newState)) {
+                     states.add(newState);
+                     queue.add(newState);
+                 }
+             }
+         }
+     }
+    /*
     public void minimizeAFD() {
         Set<Set<Integer>> acceptingGroup = new HashSet<>();
-        Set<Set<Integer>> nonAcceptingGroup = new HashSet<>();
+         Set<Set<Integer>> nonAcceptingGroup = new HashSet<>();
 
         for (Set<Integer> state : states) {
-            if (acceptedStates.containsKey(state)) {
+            if (acceptedStates.contains(state)) {
                 acceptingGroup.add(state);
             } else {
                 nonAcceptingGroup.add(state);
-            }
+            }   
         }
 
         Set<Set<Set<Integer>>> partitions = new HashSet<>();
-        partitions.add(acceptingGroup);
-        partitions.add(nonAcceptingGroup);
+         partitions.add(acceptingGroup);
+         partitions.add(nonAcceptingGroup);
 
         boolean changed;
         do {
@@ -125,20 +109,19 @@ public class AFDGenerator {
                 Map<Map<String, Set<Integer>>, Set<Set<Integer>>> classified = new HashMap<>();
                 for (Set<Integer> state : group) {
                     Map<String, Set<Integer>> transitionMap = new HashMap<>();
-
                     for (String symbol : symbolTable.values()) {
                         Set<Integer> targetState = getTransitionState(state, symbol);
-
-                        for (Set<Set<Integer>> partition : partitions) {
-                            for (Set<Integer> partitionState : partition) {
-                                if (partitionState.equals(targetState)) {
-
-                                    transitionMap.put(symbol, partitionState);
-                                    break;
-                                }
+     
+                         for (Set<Set<Integer>> partition : partitions) {
+                             for (Set<Integer> partitionState : partition) {
+                                 if (partitionState.equals(targetState)) {
+                                     transitionMap.put(symbol, partitionState);
+                                     break;
+                                 }
                             }
                         }
                     }
+
                     classified.computeIfAbsent(transitionMap, k -> new HashSet<>()).add(state);
                 }
 
@@ -150,83 +133,66 @@ public class AFDGenerator {
 
             partitions = new HashSet<>(newPartitions);
         } while (changed);
+
         reconstructMinimizedAFD(partitions);
     }
 
-    private Set<Integer> getTransitionState(Set<Integer> state, String symbol) {
+    private Integer getTransitionState(Integer state, String symbol) {
         for (Set<Integer> key : transitions.keySet()) {
-            if (key.containsAll(state) && transitions.get(key).containsKey(symbol)) {
+            if (key.contains(state) && transitions.get(key).containsKey(symbol)) {
                 Set<Integer> targetSet = transitions.get(key).get(symbol);
-                if (!targetSet.isEmpty()) {
-                    return targetSet;
+                if (!targetSet.isEmpty()) {  
+                    return targetSet.iterator().next();
                 }
             }
         }
-        return new HashSet<>();
+        return -1;
     }
 
-    private void reconstructMinimizedAFD(Set<Set<Set<Integer>>> partitions) {
+    private void reconstructMinimizedAFD(Set<Set<Integer>> partitions) {
         Map<Set<Integer>, Map<String, Set<Integer>>> minimizedTransitions = new HashMap<>();
         this.stateMapping = new HashMap<>();
         stateMapping.clear();
 
         Set<Integer> minimizedStartState = null;
-        Set<Integer> minimizedDeadState = null;
+        Set<Integer> deadState = null;
 
         int stateCounter = 0;
-        for (Set<Set<Integer>> partition : partitions) {
-            for (Set<Integer> state : partition) {
-                stateMapping.put(state, stateCounter++);
-
-                if (minimizedStartState == null && containsStartState(state)) {
-                    minimizedStartState = state;
-                }
-
-                if (state.isEmpty()) {
-                    minimizedDeadState = state;
-                }
+        for (Set<Integer> partition : partitions) {
+            stateMapping.put(partition, stateCounter++);
+            if (partition.containsAll(startState)) {
+                minimizedStartState = partition; 
+            }
+            if (partition.isEmpty()) {  
+                deadState = partition;
             }
         }
 
-        if (minimizedDeadState != null) {
-            for (Set<Set<Integer>> partition : partitions) {
-                partition.remove(minimizedDeadState);
-            }
-        }
+        for (Set<Integer> partition : partitions) {
+            Set<Integer> representative = partition;
+            Map<String, Set<Integer>> transitionMap = new HashMap<>();
 
-        for (Set<Set<Integer>> partition : partitions) {
-            for (Set<Integer> state : partition) {
-                Map<String, Set<Integer>> transitionMap = new HashMap<>();
-
-                for (String symbol : symbolTable.values()) {
-                    Set<Integer> targetState = getTransitionState(state, symbol);
-
-                    if (targetState.isEmpty() && minimizedDeadState != null) {
-                        transitionMap.put(symbol, minimizedDeadState);
-                    } else {
-                        for (Set<Set<Integer>> targetPartition : partitions) {
-                            for (Set<Integer> targetStateSet : targetPartition) {
-                                if (targetStateSet.equals(targetState)) {
-                                    transitionMap.put(symbol, targetStateSet);
-                                    break;
-                                }
-                            }
-                        }
+            for (String symbol : symbolTable.values()) {
+                boolean foundTransition = false;
+                for (Set<Integer> targetPartition : partitions) {
+                    if (targetPartition.contains(getTransitionState(representative.iterator().next(), symbol))) {
+                        transitionMap.put(symbol, targetPartition);
+                        foundTransition = true;
+                        break;
                     }
                 }
-
-                minimizedTransitions.put(state, transitionMap);
+                if (!foundTransition && deadState != null) {
+                    transitionMap.put(symbol, deadState);  
+                }
             }
+
+            minimizedTransitions.put(partition, transitionMap);
         }
 
-        this.states = new HashSet<>();
-        for (Set<Set<Integer>> partition : partitions) {
-            this.states.addAll(partition);
-        }
+        this.states = partitions;
         this.transitions = minimizedTransitions;
-        this.startState = minimizedStartState;
-    }
-
+        this.startState = minimizedStartState; 
+    }*/
     private boolean containsStartState(Set<Integer> state) {
         return state.containsAll(startState);
     }
@@ -235,12 +201,13 @@ public class AFDGenerator {
         System.out.println("Estados:");
         for (Set<Integer> state : states) {
             String stateLabel = "";
-            if (state.equals(startState)) {
-                stateLabel += " (Start)";
-            }
-            if (acceptedStates.containsKey(state)) {
-                stateLabel += " (Accepted)";
-            }
+             if (state.equals(startState)) {
+                 stateLabel += " (Start)";
+             }
+             if (acceptedStates.contains(state)) {
+                 stateLabel += " (Accepted)";
+             }
+             System.out.println(state + stateLabel);
             System.out.println(state + stateLabel);
         }
         System.out.println("\nTransiciones:");
@@ -252,61 +219,27 @@ public class AFDGenerator {
         }
     }
 
-    public boolean verificarCadena(String cadena) {
-        Set<Integer> estadoActual = startState; // Estado inicial
-        System.out.println("\n[🔍 Verificando cadena: \"" + cadena + "\"]");
-        System.out.println("→ Estado inicial: " + estadoActual);
+    /*public boolean verificarCadena(String cadena) {
+        Set<Integer> estadoActual = startState; // Iniciar en el estado inicial
 
-        for (int i = 0; i < cadena.length(); i++) {
-            char simbolo = cadena.charAt(i);
+        for (char simbolo : cadena.toCharArray()) {
             String simboloStr = String.valueOf(simbolo);
-
-            System.out.printf("  [%d] '%s' ", i, simboloStr);
-
-            if (!transitions.containsKey(estadoActual)) {
-                System.out.println("No hay transiciones desde este estado.");
-                return false;
+            if (!transitions.containsKey(estadoActual) || !transitions.get(estadoActual).containsKey(simboloStr)) {
+                return false; // No hay transición para el símbolo, la cadena no es aceptada
             }
-
-            Map<String, Set<Integer>> mapa = transitions.get(estadoActual);
-            if (!mapa.containsKey(simboloStr)) {
-                System.out.println("No hay transición con símbolo '" + simboloStr + "'");
-                return false;
-            }
-
-            Set<Integer> siguienteEstado = mapa.get(simboloStr);
-            System.out.println("→ " + siguienteEstado);
-
-            estadoActual = siguienteEstado;
+            estadoActual = transitions.get(estadoActual).get(simboloStr); // Mover al siguiente estado
         }
 
-        System.out.println("→ Estado final: " + estadoActual);
-
-        for (Set<Integer> estadoAceptado : acceptedStates.keySet()) {
-            if (estadoAceptado.equals(estadoActual)) {
-                String token = acceptedStates.get(estadoAceptado);
-                System.out.println("Estado de aceptación. Token reconocido: " + token);
-                return true;
-            }
-        }
-
-        System.out.println("Estado no aceptado.");
-        return false;
-    }
+        return acceptedStates.containsKey(estadoActual); // Verificar si el estado final es de aceptación
+    }*/
 
     public void generarDot(String nombreBase) {
-    try {
-        // Crear directorios si no existen
-        Path dotDir = Paths.get("media", "other");
-        Path imgDir = Paths.get("media", "img");
-        Files.createDirectories(dotDir);
-        Files.createDirectories(imgDir);
+        new File("media/other").mkdirs(); // Carpeta para los archivos DOT
+        new File("media/img").mkdirs(); // Carpeta para los archivos PNG
+        String dotFilePath = "media/other/" + nombreBase + ".dot";
+        String pngFilePath = "media/img/" + nombreBase + ".png";
+        System.out.println(pngFilePath);
 
-        // Archivos de salida
-        Path dotFilePath = dotDir.resolve(nombreBase + ".dot");
-        Path pngFilePath = imgDir.resolve(nombreBase + ".png");
-
-        // Generar contenido DOT
         StringBuilder dot = new StringBuilder();
         dot.append("digraph AFD {\n");
         dot.append("    rankdir=LR;\n");
@@ -314,7 +247,7 @@ public class AFDGenerator {
 
         for (Set<Integer> estado : states) {
             String estadoLabel = estado.toString();
-            if (acceptedStates.containsKey(estado)) {
+            if (acceptedStates.contains(estado)) {
                 dot.append("    \"" + estadoLabel + "\" [shape=doublecircle];\n");
             }
             if (estado.equals(startState)) {
@@ -334,35 +267,27 @@ public class AFDGenerator {
 
         dot.append("}\n");
 
-        // Escribir archivo DOT
-        Files.write(dotFilePath, dot.toString().getBytes(StandardCharsets.UTF_8));
-        System.out.println("✅ Archivo DOT generado en: " + dotFilePath.toAbsolutePath());
-
-        // Ejecutar Graphviz para generar PNG
-        ProcessBuilder pb = new ProcessBuilder("dot", "-Tpng", dotFilePath.toString(), "-o", pngFilePath.toString());
-        pb.redirectErrorStream(true);
-        Process process = pb.start();
-
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String linea;
-            while ((linea = reader.readLine()) != null) {
-                System.out.println("[graphviz] " + linea);
-            }
+        // Guardar el archivo DOT en media/other/
+        try (PrintWriter writer = new PrintWriter(dotFilePath)) {
+            writer.write(dot.toString());
+            System.out.println("Archivo DOT generado: " + dotFilePath);
+        } catch (IOException e) {
+            System.err.println("Error al escribir el archivo DOT: " + e.getMessage());
+            return;
         }
 
-        int exitCode = process.waitFor();
-        if (exitCode == 0) {
-            System.out.println("🖼️ Imagen PNG generada en: " + pngFilePath.toAbsolutePath());
-        } else {
-            System.err.println("⚠️ Error al generar imagen PNG. Código de salida: " + exitCode);
+        // Generar PNG automáticamente en media/img/
+        try {
+            ProcessBuilder pb = new ProcessBuilder("dot", "-Tpng", dotFilePath, "-o", pngFilePath);
+            pb.redirectErrorStream(true);
+            Process process = pb.start();
+            process.waitFor();
+            System.out.println("Imagen PNG generada: " + pngFilePath);
+        } catch (IOException | InterruptedException e) {
+            System.err.println("Error al generar el archivo PNG: " + e.getMessage());
         }
-
-    } catch (IOException | InterruptedException e) {
-        System.err.println("❌ Error al generar el grafo: " + e.getMessage());
-        Thread.currentThread().interrupt(); // buena práctica al capturar InterruptedException
     }
-}
-
+/* 
     public void generarCodigoLexer(String nombreArchivo) {
         StringBuilder codigo = new StringBuilder();
         codigo.append("import java.util.*;\n\n");
@@ -479,6 +404,6 @@ public class AFDGenerator {
         } catch (IOException e) {
             System.err.println("Error al escribir el archivo Lexer.java: " + e.getMessage());
         }
-    }    
+    }    */
     
 }

@@ -25,8 +25,8 @@ public class Main {
 
             // 2, 3 y 4. Convertir a postfix con dummy token
             String combinedRegex = parser.combineRegex();
-            System.out.println("\nRegex combinada: " + combinedRegex);
-
+            //System.out.println("\nRegex combinada: " + combinedRegex);
+            combinedRegex = "(( | |\\t))^#1|((\\n))^#2|((0|1|2|3|4|5|6|7|8|9)^(0|1|2|3|4|5|6|7|8|9)*)^#3|(\\+)^#4|(\\-)^#5|(\\*)^#6|(\\/)^#7|(\\()^#8|(\\))^#9";
             // Convertir la regex combinada a postfix
             String postfix = RegexConverter.toPostfix(combinedRegex);
             System.out.println("\nRegex en postfix: " + postfix);
@@ -41,7 +41,7 @@ public class Main {
 
             // 6. Mapear posiciones a nombres reales de tokens
             Map<Integer, String> positionToTokenMap = new HashMap<>();
-            Map<Integer, String> accepting = astBuilder.getAcceptingPositions();
+            /*Map<Integer, String> accepting = (Map<Integer, String>) astBuilder.getAcceptingPosition();
             for (Map.Entry<Integer, String> entry : accepting.entrySet()) {
                 String symbol = entry.getValue();
                 int tokenNumber = Integer.parseInt(symbol.substring(6));
@@ -49,25 +49,22 @@ public class Main {
                     continue;
                 String realAction = rules.get(tokenNumber - 1).action;
                 positionToTokenMap.put(entry.getKey(), realAction);
-            }
+            }*/
             // 7. Generar AFD
-            AFDGenerator afd = new AFDGenerator(
-                    astBuilder.getFollowpos(),
-                    astBuilder.getSymbolTable(),
-                    astBuilder.getStartState(astRoot),
-                    positionToTokenMap);
+            var followpos = astBuilder.getFollowpos();
+         var symbolTable = astBuilder.getSymbolTable();
+         var startState = astBuilder.getStartState(astRoot);
+         var acceptingPosition = astBuilder.getAcceptingPositions();
+         // 4. Generar el AFD
+         AFDGenerator afd = new AFDGenerator(followpos, symbolTable, startState, acceptingPosition);
 
             // 8. Imprimir AFD
             System.out.println("\nAFD generado:");
             afd.printAFD();
+            afd.generarDot("afd_" + combinedRegex.hashCode() + ".dot");
 
             // 10. Minimizar AFD (opcional pero recomendado)
-            afd.minimizeAFD();
-
-            // 11. Imprimir AFD minimizado
-            afd.generarDot("afd_original");
-            afd.minimizeAFD();
-            afd.generarDot("afd_minimizado");
+            //afd.minimizeAFD();
 
         } catch (IOException e) {
             e.printStackTrace();
