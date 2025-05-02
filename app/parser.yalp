@@ -1,0 +1,26 @@
+/* Definición de parser */
+/* INICIA Sección de TOKENS */
+%token ID
+%token NUM
+%token SUMA
+%token IGUAL
+%token PUNTOCOMA
+%token WS
+IGNORE WS
+/* FINALIZA Sección de TOKENS */
+%%
+/* INICIA Sección de PRODUCCIONES */
+S:
+    ID IGUAL E PUNTOCOMA
+;
+
+E:
+    E SUMA T
+  | T
+;
+
+T:
+    NUM
+  | ID
+;
+/* FINALIZA Sección de PRODUCCIONES */
