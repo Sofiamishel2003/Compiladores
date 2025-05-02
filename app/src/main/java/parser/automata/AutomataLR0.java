@@ -1,5 +1,8 @@
 package parser.automata;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -90,6 +93,35 @@ public class AutomataLR0 {
         }
 
         return estados;
+    }
+
+    public void exportarADot(List<Estado> estados, String rutaArchivo) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(rutaArchivo));
+        writer.write("digraph LR0Automaton {\n");
+        writer.write("    rankdir=LR;\n");
+        writer.write("    node [shape=circle];\n\n");
+    
+        // Escribir nodos
+        for (int i = 0; i < estados.size(); i++) {
+            Estado estado = estados.get(i);
+            String label = "I" + i + "\\n";
+            for (Item item : estado.items) {
+                label += item.toString().replace("\"", "\\\"") + "\\l"; // \\l = left align
+            }
+            writer.write(String.format("    I%d [label=\"%s\"];\n", i, label));
+        }
+    
+        // Escribir transiciones
+        for (int i = 0; i < estados.size(); i++) {
+            Estado estado = estados.get(i);
+            for (Map.Entry<String, Estado> trans : estado.transiciones.entrySet()) {
+                int j = estados.indexOf(trans.getValue());
+                writer.write(String.format("    I%d -> I%d [label=\"%s\"];\n", i, j, trans.getKey()));
+            }
+        }
+    
+        writer.write("}\n");
+        writer.close();
     }
 
 }

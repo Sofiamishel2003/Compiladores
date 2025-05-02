@@ -28,6 +28,7 @@ public class Main {
 
         AutomataLR0 automata = new AutomataLR0(gramatica);
         List<Estado> estados = automata.construirAutomata();
+        automata.exportarADot(estados, "parser/automata.dot");
 
         int i = 0;
         for (Estado estado : estados) {
