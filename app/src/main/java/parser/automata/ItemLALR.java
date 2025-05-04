@@ -23,6 +23,16 @@ public class ItemLALR {
         return punto < derecha.size() ? derecha.get(punto) : null;
     }
 
+    public List<String> betaYLookahead() {
+        List<String> betaA = new ArrayList<>();
+        if (punto + 1 < derecha.size()) {
+            betaA.addAll(derecha.subList(punto + 1, derecha.size()));  // β
+        }
+        betaA.addAll(lookaheads); // a
+        return betaA;
+    }
+    
+
     public List<String> betaYSiguienteLookahead(String siguiente) {
         List<String> beta = new ArrayList<>();
         for (int i = punto + 1; i < derecha.size(); i++) {
@@ -54,7 +64,7 @@ public class ItemLALR {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder(izquierda + " → ");
+        StringBuilder sb = new StringBuilder(izquierda + " -> ");
         for (int i = 0; i < derecha.size(); i++) {
             if (i == punto) sb.append("• ");
             sb.append(derecha.get(i)).append(" ");
@@ -63,5 +73,15 @@ public class ItemLALR {
         sb.append(", ").append(lookaheads);
         return sb.toString();
     }
+
+    public List<String> simbolosDespuesDelPuntoYLookahead() {
+        List<String> resultado = new ArrayList<>();
+        if (punto + 1 < derecha.size()) {
+            resultado.addAll(derecha.subList(punto + 1, derecha.size()));
+        }
+        resultado.addAll(lookaheads); // aquí va el lookahead del item padre
+        return resultado;
+    }
+    
 }
 

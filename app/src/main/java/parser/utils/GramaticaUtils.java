@@ -41,11 +41,30 @@ public class GramaticaUtils {
 
     public static Set<String> firstDeCadenas(List<String> cadena, Map<String, Set<String>> first, Set<String> terminales) {
         Set<String> resultado = new HashSet<>();
+    
         for (String simbolo : cadena) {
-            resultado.addAll(first.getOrDefault(simbolo, Set.of()));
-            if (!first.getOrDefault(simbolo, Set.of()).contains("ε")) break;
+            Set<String> primero = first.get(simbolo);
+    
+            if (primero == null && terminales.contains(simbolo)) {
+                resultado.add(simbolo);
+                break;
+            }
+    
+            if (primero != null) {
+                resultado.addAll(primero);
+                if (!primero.contains("ε")) {
+                    resultado.remove("ε"); // Eliminar si se mezcló
+                    break;
+                } else {
+                    resultado.remove("ε"); // Aún la quitamos del lookahead
+                }
+            } else {
+                break; // simbolo no encontrado
+            }
         }
+    
         return resultado;
-    }
+    }    
+    
 }
 

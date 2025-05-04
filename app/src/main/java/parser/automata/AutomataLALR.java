@@ -1,5 +1,8 @@
 package parser.automata;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -22,21 +25,24 @@ public class AutomataLALR {
     public Set<ItemLALR> closure(Set<ItemLALR> conjunto, Map<String, Set<String>> first) {
         Set<ItemLALR> cerrado = new HashSet<>(conjunto);
         boolean cambiado;
-
+    
         do {
             cambiado = false;
             Set<ItemLALR> nuevos = new HashSet<>();
-
+    
             for (ItemLALR item : cerrado) {
                 String simbolo = item.simboloDespuesDelPunto();
                 if (simbolo != null && gramatica.containsKey(simbolo)) {
-                    List<String> betaA = item.betaYSiguienteLookahead(null);
+                    List<String> betaA = item.betaYLookahead();
                     Set<String> lookaheads = GramaticaUtils.firstDeCadenas(betaA, first, terminales);
-                    if (lookaheads.isEmpty()) lookaheads.add("ε");
+                    if (lookaheads.isEmpty()) {
+                        lookaheads = new HashSet<>(item.lookaheads); // fallback si β ⇒ ε
+                    }
 
+    
                     for (List<String> produccion : gramatica.get(simbolo)) {
                         ItemLALR nuevoItem = new ItemLALR(simbolo, produccion, 0, lookaheads);
-
+    
                         boolean existe = false;
                         for (ItemLALR ya : cerrado) {
                             if (ya.nucleo().equals(nuevoItem.nucleo())) {
@@ -46,7 +52,7 @@ public class AutomataLALR {
                                 existe = true;
                             }
                         }
-
+    
                         if (!existe) {
                             nuevos.add(nuevoItem);
                             cambiado = true;
@@ -54,12 +60,13 @@ public class AutomataLALR {
                     }
                 }
             }
-
+    
             cerrado.addAll(nuevos);
         } while (cambiado);
-
+    
         return cerrado;
-    }
+    }    
+    
 
     public Set<ItemLALR> gotoClosure(Set<ItemLALR> items, String simbolo, Map<String, Set<String>> first) {
         Set<ItemLALR> avanzados = new HashSet<>();
@@ -112,5 +119,35 @@ public class AutomataLALR {
 
         return estados;
     }
+
+    public void exportarADotLALR(List<EstadoLALR> estados, String rutaArchivo) throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(rutaArchivo));
+        writer.write("digraph LALRAutomaton {\n");
+        writer.write("    rankdir=LR;\n");
+        writer.write("    node [shape=circle];\n\n");
+
+        // Escribir nodos
+        for (int i = 0; i < estados.size(); i++) {
+            EstadoLALR estado = estados.get(i);
+            StringBuilder label = new StringBuilder("I" + i + "\\n");
+            for (ItemLALR item : estado.items) {
+                label.append(item.toString().replace("\"", "\\\"")).append("\\l");
+            }
+            writer.write(String.format("    I%d [label=\"%s\"];\n", i, label));
+        }
+
+        // Escribir transiciones
+        for (int i = 0; i < estados.size(); i++) {
+            EstadoLALR estado = estados.get(i);
+            for (Map.Entry<String, EstadoLALR> trans : estado.transiciones.entrySet()) {
+                int j = estados.indexOf(trans.getValue());
+                writer.write(String.format("    I%d -> I%d [label=\"%s\"];\n", i, j, trans.getKey()));
+            }
+        }
+
+        writer.write("}\n");
+        writer.close();
+    }
+
 }
 
