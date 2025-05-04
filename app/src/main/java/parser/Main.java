@@ -3,28 +3,32 @@ package parser;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import parser.automata.AutomataLR0;
 import parser.automata.Estado;
 import parser.automata.YalpParser;
+import parser.automata.YalpParser.ResultadoYalp;
 
 public class Main {
     public static void main(String[] args) throws Exception {
         String rutaYalp = Paths.get("../../../", "parser.yalp").toAbsolutePath().normalize().toString();
 
-        Map<String, List<List<String>>> gramatica = YalpParser.parsearGramatica(rutaYalp);
-        // Agregar producción aumentada S' → S
-        String simboloInicial = "S";
-        gramatica.put("S'", List.of(List.of(simboloInicial)));
+        ResultadoYalp resultado = YalpParser.parsearArchivo(rutaYalp);
+        Map<String, List<List<String>>> gramatica = resultado.gramatica;
+        Set<String> terminales = resultado.terminales;
 
+        // Agregar producción aumentada
+        gramatica.put("S'", List.of(List.of("S")));
+
+        // Mostrar la gramatica
         for (Map.Entry<String, List<List<String>>> entrada : gramatica.entrySet()) {
-            String noTerminal = entrada.getKey();
-            List<List<String>> producciones = entrada.getValue();
-            System.out.println(noTerminal + " ->");
-            for (List<String> produccion : producciones) {
-                System.out.println("    " + String.join(" ", produccion));
+            System.out.println(entrada.getKey() + " ->");
+            for (List<String> prod : entrada.getValue()) {
+                System.out.println("    " + String.join(" ", prod));
             }
-        }        
+        }
+        System.out.println("Terminales: " + terminales);       
 
         AutomataLR0 automata = new AutomataLR0(gramatica);
         List<Estado> estados = automata.construirAutomata();

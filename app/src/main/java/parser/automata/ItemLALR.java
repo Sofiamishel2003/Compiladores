@@ -1,0 +1,67 @@
+package parser.automata;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+
+public class ItemLALR {
+    public final String izquierda;
+    public final List<String> derecha;
+    public final int punto;
+    public final Set<String> lookaheads;
+
+    public ItemLALR(String izquierda, List<String> derecha, int punto, Set<String> lookaheads) {
+        this.izquierda = izquierda;
+        this.derecha = new ArrayList<>(derecha);
+        this.punto = punto;
+        this.lookaheads = new HashSet<>(lookaheads);
+    }
+
+    public String simboloDespuesDelPunto() {
+        return punto < derecha.size() ? derecha.get(punto) : null;
+    }
+
+    public List<String> betaYSiguienteLookahead(String siguiente) {
+        List<String> beta = new ArrayList<>();
+        for (int i = punto + 1; i < derecha.size(); i++) {
+            beta.add(derecha.get(i));
+        }
+        if (siguiente != null) beta.add(siguiente);
+        return beta;
+    }
+
+    // Para agrupar núcleos iguales
+    public String nucleo() {
+        return izquierda + " → " + derecha + " • " + punto;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof ItemLALR)) return false;
+        ItemLALR otro = (ItemLALR) o;
+        return izquierda.equals(otro.izquierda) &&
+               derecha.equals(otro.derecha) &&
+               punto == otro.punto &&
+               lookaheads.equals(otro.lookaheads);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(izquierda, derecha, punto, lookaheads);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder(izquierda + " → ");
+        for (int i = 0; i < derecha.size(); i++) {
+            if (i == punto) sb.append("• ");
+            sb.append(derecha.get(i)).append(" ");
+        }
+        if (punto == derecha.size()) sb.append("• ");
+        sb.append(", ").append(lookaheads);
+        return sb.toString();
+    }
+}
+
