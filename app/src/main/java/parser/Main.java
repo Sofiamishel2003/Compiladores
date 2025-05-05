@@ -48,14 +48,35 @@ public class Main {
             System.out.println("--------------------------------------------------");
             i++;
         }
-
+        
+        // Construcción del autómata LR(1)
+        System.out.println("\n=== AUTÓMATA LR(1) ===");
         AutomataLALR automataLALR = new AutomataLALR(gramatica, terminales);
-        List<EstadoLALR> estadosLALR = automataLALR.construirAutomata();
-        automataLALR.exportarADotLALR(estadosLALR, "parser/automataLALR.dot");
+        List<EstadoLALR> estadosLR1 = automataLALR.construirAutomataLR1();
+        automataLALR.exportarADotLALR(estadosLR1, "parser/automataLR1.dot");
 
         int j = 0;
+        for (EstadoLALR estado : estadosLR1) {
+            System.out.println("Estado LR(1) " + j + ":");
+            for (ItemLALR item : estado.items) {
+                System.out.println("  " + item);
+            }
+            for (Map.Entry<String, EstadoLALR> trans : estado.transiciones.entrySet()) {
+                int destino = estadosLR1.indexOf(trans.getValue());
+                System.out.println("  -- " + trans.getKey() + " --> Estado " + destino);
+            }
+            System.out.println("--------------------------------------------------");
+            j++;
+        }
+
+        // Fusión LR(1) → LALR
+        System.out.println("\n=== AUTÓMATA LALR (FUSIÓN) ===");
+        List<EstadoLALR> estadosLALR = automataLALR.fusionarLR1paraLALR(estadosLR1);
+        automataLALR.exportarADotLALR(estadosLALR, "parser/automataLALR.dot");
+
+        int k = 0;
         for (EstadoLALR estado : estadosLALR) {
-            System.out.println("Estado LALR " + j + ":");
+            System.out.println("Estado LALR " + k + ":");
             for (ItemLALR item : estado.items) {
                 System.out.println("  " + item);
             }
@@ -64,7 +85,7 @@ public class Main {
                 System.out.println("  -- " + trans.getKey() + " --> Estado " + destino);
             }
             System.out.println("--------------------------------------------------");
-            j++;
+            k++;
         }
     }
 }

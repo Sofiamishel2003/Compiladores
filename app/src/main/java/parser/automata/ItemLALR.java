@@ -32,6 +32,16 @@ public class ItemLALR {
         return betaA;
     }
     
+    public boolean mismoNucleo(ItemLALR otro) {
+        return this.izquierda.equals(otro.izquierda)
+            && this.derecha.equals(otro.derecha)
+            && this.punto == otro.punto;
+    }
+
+    public boolean mismoLookAhead(ItemLALR otro) {
+        return this.lookaheads.equals(otro.lookaheads);
+    }
+    
 
     public List<String> betaYSiguienteLookahead(String siguiente) {
         List<String> beta = new ArrayList<>();
@@ -48,19 +58,21 @@ public class ItemLALR {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof ItemLALR)) return false;
-        ItemLALR otro = (ItemLALR) o;
-        return izquierda.equals(otro.izquierda) &&
-               derecha.equals(otro.derecha) &&
-               punto == otro.punto &&
-               lookaheads.equals(otro.lookaheads);
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof ItemLALR)) return false;
+        ItemLALR other = (ItemLALR) obj;
+        return izquierda.equals(other.izquierda)
+            && derecha.equals(other.derecha)
+            && punto == other.punto
+            && lookaheads.equals(other.lookaheads);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(izquierda, derecha, punto, lookaheads);
     }
+
 
     @Override
     public String toString() {

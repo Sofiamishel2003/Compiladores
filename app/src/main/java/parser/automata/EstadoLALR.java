@@ -26,17 +26,22 @@ public class EstadoLALR {
     public boolean equals(Object o) {
         if (!(o instanceof EstadoLALR)) return false;
         EstadoLALR otro = (EstadoLALR) o;
-        return nucleo().equals(otro.nucleo());
+        return this.items.equals(otro.items);
     }
 
     @Override
     public int hashCode() {
-        return nucleo().hashCode();
+        return items.hashCode();
     }
 
     @Override
     public String toString() {
-        return items.toString();
+        StringBuilder sb = new StringBuilder();
+        for (ItemLALR item : items) {
+            sb.append(item).append("\n");
+        }
+        return sb.toString();
     }
+
 }
 

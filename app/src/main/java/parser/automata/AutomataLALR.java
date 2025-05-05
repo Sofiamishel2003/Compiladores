@@ -4,12 +4,14 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import parser.utils.GramaticaUtils;
 
@@ -33,12 +35,19 @@ public class AutomataLALR {
             for (ItemLALR item : cerrado) {
                 String simbolo = item.simboloDespuesDelPunto();
                 if (simbolo != null && gramatica.containsKey(simbolo)) {
-                    List<String> betaA = item.betaYLookahead();
-                    Set<String> lookaheads = GramaticaUtils.firstDeCadenas(betaA, first, terminales);
-                    if (lookaheads.isEmpty()) {
-                        lookaheads = new HashSet<>(item.lookaheads); // fallback si β ⇒ ε
+                    // Calculamos FIRST(βa)
+                    List<String> beta = item.derecha.subList(item.punto + 1, item.derecha.size());
+                    Set<String> lookaheads = new HashSet<>();
+    
+                    for (String a : item.lookaheads) {
+                        List<String> betaA = new ArrayList<>(beta);
+                        betaA.add(a);
+                        lookaheads.addAll(GramaticaUtils.firstDeCadenas(betaA, first, terminales));
                     }
-
+    
+                    if (lookaheads.isEmpty()) {
+                        lookaheads = new HashSet<>(item.lookaheads); // fallback
+                    }
     
                     for (List<String> produccion : gramatica.get(simbolo)) {
                         ItemLALR nuevoItem = new ItemLALR(simbolo, produccion, 0, lookaheads);
@@ -46,10 +55,12 @@ public class AutomataLALR {
                         boolean existe = false;
                         for (ItemLALR ya : cerrado) {
                             if (ya.nucleo().equals(nuevoItem.nucleo())) {
+                                // Fusionamos lookaheads si ya existe un ítem con el mismo núcleo
                                 if (ya.lookaheads.addAll(nuevoItem.lookaheads)) {
                                     cambiado = true;
                                 }
                                 existe = true;
+                                break;
                             }
                         }
     
@@ -66,59 +77,169 @@ public class AutomataLALR {
     
         return cerrado;
     }    
-    
 
     public Set<ItemLALR> gotoClosure(Set<ItemLALR> items, String simbolo, Map<String, Set<String>> first) {
-        Set<ItemLALR> avanzados = new HashSet<>();
+        Set<ItemLALR> nuevos = new HashSet<>();
+    
         for (ItemLALR item : items) {
             if (simbolo.equals(item.simboloDespuesDelPunto())) {
-                avanzados.add(new ItemLALR(item.izquierda, item.derecha, item.punto + 1, item.lookaheads));
+                // Avanza el punto
+                List<String> beta = item.derecha.subList(item.punto + 1, item.derecha.size());
+                List<String> betaA = new ArrayList<>(beta);
+                betaA.addAll(item.lookaheads); // append lookahead symbols for FIRST
+    
+                Set<String> nuevosLookaheads = GramaticaUtils.firstDeCadenas(betaA, first, terminales);
+                if (nuevosLookaheads.isEmpty()) {
+                    nuevosLookaheads = new HashSet<>(item.lookaheads); // fallback si β ⇒ ε
+                }
+    
+                nuevos.add(new ItemLALR(item.izquierda, item.derecha, item.punto + 1, item.lookaheads)); // mantenemos lookaheads aquí
             }
         }
-        return closure(avanzados, first);
+    
+        return closure(nuevos, first);
     }
 
-    public List<EstadoLALR> construirAutomata() {
-        Map<String, Set<String>> first = GramaticaUtils.calcularFirst(gramatica, terminales);
-
+    public List<EstadoLALR> construirAutomataLR1() {
+        Map<String, Set<String>> firsts = GramaticaUtils.calcularFirst(gramatica, terminales);
+    
         List<EstadoLALR> estados = new ArrayList<>();
-        Set<ItemLALR> inicio = new HashSet<>();
-        String inicioProd = "S'";
-        inicio.add(new ItemLALR(inicioProd, gramatica.get(inicioProd).get(0), 0, Set.of("$")));
-
-        EstadoLALR estadoInicial = new EstadoLALR(closure(inicio, first));
+    
+        // Asumimos que el símbolo inicial está en la gramática como "S'"
+        String simboloInicial = "S'";
+        List<String> produccionInicial = gramatica.get(simboloInicial).get(0);
+    
+        // Crear estado inicial con lookahead $
+        ItemLALR itemInicial = new ItemLALR(simboloInicial, produccionInicial, 0, Set.of("$"));
+        Set<ItemLALR> conjuntoInicial = closure(Set.of(itemInicial), firsts);
+        EstadoLALR estadoInicial = new EstadoLALR(conjuntoInicial);
         estados.add(estadoInicial);
-
-        Queue<EstadoLALR> porProcesar = new LinkedList<>();
-        porProcesar.add(estadoInicial);
-
-        while (!porProcesar.isEmpty()) {
-            EstadoLALR actual = porProcesar.poll();
-
+    
+        Queue<EstadoLALR> pendientes = new LinkedList<>();
+        pendientes.add(estadoInicial);
+    
+        while (!pendientes.isEmpty()) {
+            EstadoLALR actual = pendientes.poll();
+    
+            // Obtener todos los símbolos posibles después del punto en los ítems del estado
             Set<String> simbolos = new HashSet<>();
             for (ItemLALR item : actual.items) {
                 String simbolo = item.simboloDespuesDelPunto();
-                if (simbolo != null) simbolos.add(simbolo);
-            }
-
-            for (String simbolo : simbolos) {
-                Set<ItemLALR> cierre = gotoClosure(actual.items, simbolo, first);
-                EstadoLALR nuevoEstado = new EstadoLALR(cierre);
-
-                int idx = estados.indexOf(nuevoEstado);
-                if (idx == -1) {
-                    estados.add(nuevoEstado);
-                    porProcesar.add(nuevoEstado);
-                } else {
-                    nuevoEstado = estados.get(idx);
+                if (simbolo != null) {
+                    simbolos.add(simbolo);
                 }
+            }
+    
+            for (String simbolo : simbolos) {
+                Set<ItemLALR> irA = gotoClosure(actual.items, simbolo, firsts);
+                if (irA.isEmpty()) continue;
+    
+                // Comparar ítems con lookaheads para detectar estados duplicados
+                EstadoLALR destino = null;
+                for (EstadoLALR existente : estados) {
+                    if (existente.items.equals(irA)) {
+                        // Verificar si también coinciden los lookaheads
+                        boolean lookaheadsCoinciden = true;
+                        for (ItemLALR item : irA) {
+                            boolean encontrado = false;
+                            for (ItemLALR itemExistente : existente.items) {
+                                if (item.mismoNucleo(itemExistente)) {
+                                    // Si el núcleo coincide, verificamos los lookaheads
+                                    if (item.lookaheads.equals(itemExistente.lookaheads)) {
+                                        encontrado = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (!encontrado) {
+                                lookaheadsCoinciden = false;
+                                break;
+                            }
+                        }
+    
+                        if (lookaheadsCoinciden) {
+                            destino = existente;
+                            break;
+                        }
+                    }
+                }
+    
+                if (destino == null) {
+                    destino = new EstadoLALR(irA);
+                    estados.add(destino);
+                    pendientes.add(destino);
+                }
+    
+                actual.transiciones.put(simbolo, destino);
+            }
+        }
+    
+        return estados;
+    }    
+  
 
-                actual.transiciones.put(simbolo, nuevoEstado);
+    public List<EstadoLALR> fusionarLR1paraLALR(List<EstadoLALR> estadosLR1) {
+        Map<Set<ItemLALR>, EstadoLALR> mapaNucleos = new HashMap<>();
+
+        for (EstadoLALR estado : estadosLR1) {
+            // Extraer núcleo (sin lookaheads)
+            Set<ItemLALR> nucleo = estado.items.stream()
+                .map(item -> new ItemLALR(item.izquierda, item.derecha, item.punto, Set.of()))
+                .collect(Collectors.toSet());
+
+            EstadoLALR existente = mapaNucleos.get(nucleo);
+            if (existente == null) {
+                // Clonar items con lookaheads
+                Set<ItemLALR> nuevosItems = new HashSet<>();
+                for (ItemLALR item : estado.items) {
+                    nuevosItems.add(new ItemLALR(item.izquierda, item.derecha, item.punto, new HashSet<>(item.lookaheads)));
+                }
+                EstadoLALR nuevoEstado = new EstadoLALR(nuevosItems);
+                mapaNucleos.put(nucleo, nuevoEstado);
+            } else {
+                // Fusionar lookaheads
+                for (ItemLALR item : estado.items) {
+                    for (ItemLALR itExistente : existente.items) {
+                        if (itExistente.mismoNucleo(item)) {
+                            itExistente.lookaheads.clear();
+                        }
+                    }
+                }
             }
         }
 
-        return estados;
+        // Reconstruir transiciones
+        List<EstadoLALR> nuevosEstados = new ArrayList<>(mapaNucleos.values());
+        for (EstadoLALR original : estadosLR1) {
+            EstadoLALR fusionadoOrigen = encontrarEstadoFusionado(original, nuevosEstados);
+            for (Map.Entry<String, EstadoLALR> trans : original.transiciones.entrySet()) {
+                EstadoLALR fusionadoDestino = encontrarEstadoFusionado(trans.getValue(), nuevosEstados);
+                if (fusionadoOrigen != null && fusionadoDestino != null) {
+                    fusionadoOrigen.transiciones.put(trans.getKey(), fusionadoDestino);
+                }
+            }
+        }
+
+        return nuevosEstados;
     }
+
+    private EstadoLALR encontrarEstadoFusionado(EstadoLALR original, List<EstadoLALR> fusionados) {
+        Set<ItemLALR> nucleo = original.items.stream()
+            .map(item -> new ItemLALR(item.izquierda, item.derecha, item.punto, Set.of()))
+            .collect(Collectors.toSet());
+    
+        for (EstadoLALR est : fusionados) {
+            Set<ItemLALR> nucleoEst = est.items.stream()
+                .map(item -> new ItemLALR(item.izquierda, item.derecha, item.punto, Set.of()))
+                .collect(Collectors.toSet());
+    
+            if (nucleoEst.equals(nucleo)) {
+                return est;
+            }
+        }
+        return null;
+    }
+    
 
     public void exportarADotLALR(List<EstadoLALR> estados, String rutaArchivo) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(rutaArchivo));
@@ -150,4 +271,5 @@ public class AutomataLALR {
     }
 
 }
+
 

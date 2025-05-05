@@ -1,24 +1,19 @@
 /* Definición de parser */
 /* INICIA Sección de TOKENS */
-%token INT
-%token SUMA
-%token MULT
-%token PARIZQ
-%token PARDER
+%token c
+%token d
 %token WS
 IGNORE WS
 /* FINALIZA Sección de TOKENS */
 %%
 /* INICIA Sección de PRODUCCIONES */
 S:
-    T SUMA S
-  | T
+    C C
 ;
 
-T:
-    INT MULT T
-  | INT
-  | PARIZQ S PARDER
+C:
+    c C
+  | d
 ;
 /* FINALIZA Sección de PRODUCCIONES */
 
