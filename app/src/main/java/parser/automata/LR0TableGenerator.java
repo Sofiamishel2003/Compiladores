@@ -52,6 +52,16 @@ public class LR0TableGenerator {
     }
 
     private int buscarProduccionIndex(String izquierda, List<String> derecha) {
-        
+        int index = 0;
+        for (Map.Entry<String, List<List<String>>> entry : gramatica.entrySet()) {
+            String lhs = entry.getKey();
+            for (List<String> rhs : entry.getValue()) {
+                if (lhs.equals(izquierda) && rhs.equals(derecha)) {
+                    return index;
+                }
+                index++;
+            }
+        }
+        return -1; // no encontrado
     }
 }
