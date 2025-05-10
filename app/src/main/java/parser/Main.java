@@ -1,6 +1,7 @@
 package parser;
 
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -10,6 +11,7 @@ import parser.automata.AutomataLR0;
 import parser.automata.Estado;
 import parser.automata.EstadoLALR;
 import parser.automata.ItemLALR;
+import parser.automata.LR0TableGenerator;
 import parser.automata.YalpParser;
 import parser.automata.YalpParser.ResultadoYalp;
 
@@ -48,6 +50,27 @@ public class Main {
             System.out.println("--------------------------------------------------");
             i++;
         }
+
+        // Construcción de la tabla LR(0)
+        System.out.println("\n=== TABLA LR(0) ===");
+        Set<String> noTerminales = new HashSet<>(gramatica.keySet());
+        noTerminales.removeAll(terminales);
+
+        LR0TableGenerator generadorTabla = new LR0TableGenerator(gramatica);
+        LR0TableGenerator.ParsingTable tabla = generadorTabla.generarTabla(estados, terminales, noTerminales);
+
+        // Mostrar tabla ACTION
+        System.out.println("\nTabla ACTION:");
+        for (Map.Entry<Integer, Map<String, String>> fila : tabla.action.entrySet()) {
+            System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
+        }
+
+        // Mostrar tabla GOTO
+        System.out.println("\nTabla GOTO:");
+        for (Map.Entry<Integer, Map<String, Integer>> fila : tabla.goTo.entrySet()) {
+            System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
+        }
+
         
         // Construcción del autómata LR(1)
         System.out.println("\n=== AUTÓMATA LR(1) ===");
