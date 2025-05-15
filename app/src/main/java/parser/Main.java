@@ -33,8 +33,9 @@ public class Main {
                 System.out.println("    " + String.join(" ", prod));
             }
         }
-        System.out.println("Terminales: " + terminales);       
+        System.out.println("Terminales: " + terminales);
 
+        // Construcción del autómata LR(0)
         AutomataLR0 automata = new AutomataLR0(gramatica);
         List<Estado> estados = automata.construirAutomata();
         automata.exportarADot(estados, "parser/automata.dot");
@@ -71,7 +72,6 @@ public class Main {
             System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
         }
 
-        
         // Construcción del autómata LR(1)
         System.out.println("\n=== AUTÓMATA LR(1) ===");
         AutomataLALR automataLALR = new AutomataLALR(gramatica, terminales);
@@ -109,6 +109,27 @@ public class Main {
             }
             System.out.println("--------------------------------------------------");
             k++;
+        }
+
+        // Construcción de la tabla LALR(1)
+        System.out.println("\n=== TABLA LALR(1) ===");
+        Set<String> noTerminalesLALR = new HashSet<>(gramatica.keySet());
+        noTerminalesLALR.removeAll(terminales);
+
+        parser.automata.LALRTableGenerator generadorTablaLALR = new parser.automata.LALRTableGenerator(gramatica);
+        parser.automata.LALRTableGenerator.ParsingTable tablaLALR = generadorTablaLALR.generarTabla(estadosLALR,
+                terminales, noTerminalesLALR);
+
+        // Mostrar tabla ACTION
+        System.out.println("\nTabla ACTION:");
+        for (Map.Entry<Integer, Map<String, String>> fila : tablaLALR.action.entrySet()) {
+            System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
+        }
+
+        // Mostrar tabla GOTO
+        System.out.println("\nTabla GOTO:");
+        for (Map.Entry<Integer, Map<String, Integer>> fila : tablaLALR.goTo.entrySet()) {
+            System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
         }
     }
 }

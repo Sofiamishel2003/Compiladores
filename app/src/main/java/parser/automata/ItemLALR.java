@@ -23,6 +23,10 @@ public class ItemLALR {
         return punto < derecha.size() ? derecha.get(punto) : null;
     }
 
+    public boolean esReducido() {
+        return punto >= derecha.size();
+    }
+
     public List<String> betaYLookahead() {
         List<String> betaA = new ArrayList<>();
         if (punto + 1 < derecha.size()) {
