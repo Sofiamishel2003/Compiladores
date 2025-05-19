@@ -240,28 +240,13 @@ public class AutomataLALR {
                 EstadoLALR nuevoEstado = new EstadoLALR(nuevosItems);
                 mapaNucleos.put(nucleo, nuevoEstado);
             } else {
-                
-                // Eliminar lookaheads
-                if (sePuedeFusionar(estado.items, existente.items)) {
-                    Map<String, Integer> conteo1 = contarItemsBase(estado.items);
-                    Map<String, Integer> conteo2 = contarItemsBase(existente.items);
-                    if (conteo1.equals(conteo2)) {
-                        for (ItemLALR item : estado.items) {
-                            for (ItemLALR itExistente : existente.items) {
-                                if (itExistente.mismoNucleo(item)) {
-                                    itExistente.lookaheads.clear();
-                                }
-                            }
+                for (ItemLALR item : estado.items) {
+                    for (ItemLALR itExistente : existente.items) {
+                        if (itExistente.mismoNucleo(item)) {
+                            itExistente.lookaheads.clear();
+                            //itExistente.lookaheads.addAll(item.lookaheads);
                         }
                     }
-                }
-                else {
-                    Set<ItemLALR> nuevosItems = new HashSet<>();
-                    for (ItemLALR item : estado.items) {
-                        nuevosItems.add(new ItemLALR(item.izquierda, item.derecha, item.punto, new HashSet<>(item.lookaheads)));
-                    }
-                    EstadoLALR nuevoEstado = new EstadoLALR(nuevosItems);
-                    mapaNucleos.put(nucleo, nuevoEstado);
                 }
             }
         }

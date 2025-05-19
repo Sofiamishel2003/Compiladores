@@ -134,6 +134,7 @@ public class Lexer {
         while (position < input.length()) {
             Token token = nextToken();
             if (token != null) {
+                System.out.println("token: "+token);
                 tokens.add(token);
             } else {
                 System.err.println("Error léxico en posición " + position);
