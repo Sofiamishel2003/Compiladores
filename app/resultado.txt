@@ -1,0 +1,32 @@
+Cadena: (1+2)*3        
+  Resultado LR(0): ACEPTADA
+  Resultado LALR : RECHAZADA (error en token: PLUS)
+---------------------------
+Cadena: 1+2            
+  Resultado LR(0): ACEPTADA
+  Resultado LALR : RECHAZADA (error en token: PLUS)
+---------------------------
+Cadena: 9+             
+  Resultado LR(0): RECHAZADA (no se pudo reducir a input antes del fin de cadena)
+  Resultado LALR : RECHAZADA (error en token: PLUS)
+---------------------------
+Cadena: (5+3           
+  Resultado LR(0): RECHAZADA (no se pudo reducir a input antes del fin de cadena)
+  Resultado LALR : RECHAZADA (error en token: PLUS)
+---------------------------
+Cadena: 4*(2+))        
+  Resultado LR(0): RECHAZADA (error en token: RPAREN)
+  Resultado LALR : RECHAZADA (error en token: TIMES)
+---------------------------
+Cadena: +1             
+  Resultado LR(0): RECHAZADA (error en token: PLUS)
+  Resultado LALR : RECHAZADA (error en token: PLUS)
+---------------------------
+Cadena: (              
+  Resultado LR(0): RECHAZADA (no se pudo reducir a input antes del fin de cadena)
+  Resultado LALR : RECHAZADA (no se pudo reducir a input antes del fin de cadena)
+---------------------------
+Cadena: ((1+2))
+  Resultado LR(0): ACEPTADA
+  Resultado LALR : RECHAZADA (error en token: PLUS)
+---------------------------

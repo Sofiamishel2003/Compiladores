@@ -1,19 +1,32 @@
 /* Definición de parser */
 /* INICIA Sección de TOKENS */
-%token c
-%token d
-%token WS
-IGNORE WS
+%token NUM
+%token PLUS MINUS TIMES DIV
+%token LPAREN RPAREN
+%token EOF
+%token WHITESPACE EOL
+IGNORE WHITESPACE EOL
 /* FINALIZA Sección de TOKENS */
 %%
 /* INICIA Sección de PRODUCCIONES */
-S:
-    C C
+input:
+    expr EOF
 ;
-
-C:
-    c C
-  | d
+/* Expresiones con suma y resta */
+expr:
+    expr PLUS term
+  | expr MINUS term
+  | term
+;
+/* Expresiones con multiplicación y división */
+term:
+    term TIMES factor
+  | term DIV factor
+  | factor
+;
+/* Factores entre paréntesis o números */
+factor:
+    LPAREN expr RPAREN
+  | NUM
 ;
 /* FINALIZA Sección de PRODUCCIONES */
-
