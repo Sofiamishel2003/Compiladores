@@ -38,9 +38,13 @@ public class LALRTableGenerator {
             tabla.goTo.get(i).put(simbolo, j); // goto
           }
         } else {
-          int prodIndex = buscarProduccionIndex(item.izquierda, item.derecha);
-          for (String lookahead : item.lookaheads) {
-            tabla.action.get(i).putIfAbsent(lookahead, "r" + prodIndex);
+          if (item.izquierda.equals("S'") && item.esReducido() && item.lookaheads.contains("EOF")) {
+            tabla.action.get(i).put("EOF", "accept"); // ✅ acción especial
+          } else {
+            int prodIndex = buscarProduccionIndex(item.izquierda, item.derecha);
+            for (String lookahead : item.lookaheads) {
+              tabla.action.get(i).putIfAbsent(lookahead, "r" + prodIndex);
+            }
           }
         }
       }
