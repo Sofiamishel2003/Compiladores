@@ -31,39 +31,44 @@ public class AutomataLALR {
         do {
             cambiado = false;
             Set<ItemLALR> nuevos = new HashSet<>();
-    
+            Set<ItemLALR> itemsParaReemplazar = new HashSet<>();
+            Set<ItemLALR> itemsNuevosFusionados = new HashSet<>();
+
             for (ItemLALR item : cerrado) {
                 String simbolo = item.simboloDespuesDelPunto();
                 if (simbolo != null && gramatica.containsKey(simbolo)) {
-                    // Calculamos FIRST(βa)
+                     // Calculamos FIRST(βa)
                     List<String> beta = item.derecha.subList(item.punto + 1, item.derecha.size());
                     Set<String> lookaheads = new HashSet<>();
-    
+
                     for (String a : item.lookaheads) {
                         List<String> betaA = new ArrayList<>(beta);
                         betaA.add(a);
                         lookaheads.addAll(GramaticaUtils.firstDeCadenas(betaA, first, terminales));
                     }
-    
+
                     if (lookaheads.isEmpty()) {
                         lookaheads = new HashSet<>(item.lookaheads); // fallback
                     }
-    
+
                     for (List<String> produccion : gramatica.get(simbolo)) {
                         ItemLALR nuevoItem = new ItemLALR(simbolo, produccion, 0, lookaheads);
-    
+
                         boolean existe = false;
                         for (ItemLALR ya : cerrado) {
                             if (ya.nucleo().equals(nuevoItem.nucleo())) {
-                                // Fusionamos lookaheads si ya existe un ítem con el mismo núcleo
-                                if (ya.lookaheads.addAll(nuevoItem.lookaheads)) {
+                                if (!ya.lookaheads.containsAll(nuevoItem.lookaheads)) {
+                                    Set<String> nuevosLookaheads = new HashSet<>(ya.lookaheads);
+                                    nuevosLookaheads.addAll(nuevoItem.lookaheads);
+                                    itemsParaReemplazar.add(ya);
+                                    itemsNuevosFusionados.add(new ItemLALR(ya.izquierda, ya.derecha, ya.punto, nuevosLookaheads));
                                     cambiado = true;
                                 }
                                 existe = true;
                                 break;
                             }
                         }
-    
+
                         if (!existe) {
                             nuevos.add(nuevoItem);
                             cambiado = true;
@@ -71,14 +76,16 @@ public class AutomataLALR {
                     }
                 }
             }
-    
+
+            cerrado.removeAll(itemsParaReemplazar);
+            cerrado.addAll(itemsNuevosFusionados);
             cerrado.addAll(nuevos);
         } while (cambiado);
     
         return cerrado;
     }    
 
-    public Set<ItemLALR> gotoClosure(Set<ItemLALR> items, String simbolo, Map<String, Set<String>> first) {
+     public Set<ItemLALR> gotoClosure(Set<ItemLALR> items, String simbolo, Map<String, Set<String>> first) {
         Set<ItemLALR> nuevos = new HashSet<>();
     
         for (ItemLALR item : items) {
@@ -109,8 +116,8 @@ public class AutomataLALR {
         String simboloInicial = "S'";
         List<String> produccionInicial = gramatica.get(simboloInicial).get(0);
     
-        // Crear estado inicial con lookahead $
-        ItemLALR itemInicial = new ItemLALR(simboloInicial, produccionInicial, 0, Set.of("$"));
+        // Crear estado inicial con lookahead EOF
+        ItemLALR itemInicial = new ItemLALR(simboloInicial, produccionInicial, 0, Set.of("EOF"));
         Set<ItemLALR> conjuntoInicial = closure(Set.of(itemInicial), firsts);
         EstadoLALR estadoInicial = new EstadoLALR(conjuntoInicial);
         estados.add(estadoInicial);
@@ -120,7 +127,7 @@ public class AutomataLALR {
     
         while (!pendientes.isEmpty()) {
             EstadoLALR actual = pendientes.poll();
-    
+
             // Obtener todos los símbolos posibles después del punto en los ítems del estado
             Set<String> simbolos = new HashSet<>();
             for (ItemLALR item : actual.items) {
@@ -166,6 +173,7 @@ public class AutomataLALR {
     
                 if (destino == null) {
                     destino = new EstadoLALR(irA);
+                   // System.out.println("Transición por símbolo: " + simbolo + " genera nuevo estado con " + irA.size() + " items");
                     estados.add(destino);
                     pendientes.add(destino);
                 }
@@ -177,7 +185,7 @@ public class AutomataLALR {
         return estados;
     }    
   
-
+    
     public List<EstadoLALR> fusionarLR1paraLALR(List<EstadoLALR> estadosLR1) {
         Map<Set<ItemLALR>, EstadoLALR> mapaNucleos = new HashMap<>();
 
@@ -241,7 +249,7 @@ public class AutomataLALR {
     }
     
 
-    public void exportarADotLALR(List<EstadoLALR> estados, String rutaArchivo) throws IOException {
+    public static void exportarADotLALR(List<EstadoLALR> estados, String rutaArchivo) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(rutaArchivo));
         writer.write("digraph LALRAutomaton {\n");
         writer.write("    rankdir=LR;\n");

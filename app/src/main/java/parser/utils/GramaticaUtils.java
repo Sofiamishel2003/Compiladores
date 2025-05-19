@@ -15,6 +15,14 @@ public class GramaticaUtils {
         for (String simbolo : gramatica.keySet()) {
             first.put(simbolo, new HashSet<>());
         }
+        // Asegurar que cada símbolo de producción se agregue explícitamente al mapa first, incluso si su lista de producciones está vacía
+        for (List<List<String>> producciones : gramatica.values()) {
+            for (List<String> prod : producciones) {
+                for (String simbolo : prod) {
+                    first.putIfAbsent(simbolo, new HashSet<>());
+                }
+            }
+        }
 
         for (String terminal : terminales) {
             first.put(terminal, new HashSet<>(Collections.singleton(terminal)));
@@ -27,6 +35,9 @@ public class GramaticaUtils {
                 for (List<String> produccion : gramatica.get(noTerminal)) {
                     for (String simbolo : produccion) {
                         Set<String> primeroSimbolo = first.get(simbolo);
+                        if (primeroSimbolo == null) {
+                            primeroSimbolo = new HashSet<>(); // Previene NullPointerException
+                        }
                         int antes = first.get(noTerminal).size();
                         first.get(noTerminal).addAll(primeroSimbolo);
                         if (!first.get(noTerminal).contains("ε")) break;

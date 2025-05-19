@@ -2,12 +2,16 @@ package parser.automata;
 
 import java.util.*;
 
+import parser.automata.LALRTableGenerator.ParsingTable;
+
 public class LR0TableGenerator {
 
     private final Map<String, List<List<String>>> gramatica;
+    private final List<Map.Entry<String, List<String>>> produccionesOrdenadas;
 
-    public LR0TableGenerator(Map<String, List<List<String>>> gramatica) {
+    public LR0TableGenerator(Map<String, List<List<String>>> gramatica, List<Map.Entry<String, List<String>>> produccionesOrdenadas) {
         this.gramatica = gramatica;
+        this.produccionesOrdenadas = produccionesOrdenadas;
     }
 
     public static class ParsingTable {
@@ -26,7 +30,7 @@ public class LR0TableGenerator {
 
             for (Item item : estado.items) {
                 if (item.izquierda.equals("S'") && item.esReducido()) {
-                    tabla.action.get(i).put("$", "accept");
+                    tabla.action.get(i).put("EOF", "accept");
                 } else if (!item.esReducido()) {
                     String simbolo = item.simboloDespuesDelPunto();
                     Estado siguiente = estado.transiciones.get(simbolo);
@@ -52,16 +56,13 @@ public class LR0TableGenerator {
     }
 
     private int buscarProduccionIndex(String izquierda, List<String> derecha) {
-        int index = 0;
-        for (Map.Entry<String, List<List<String>>> entry : gramatica.entrySet()) {
-            String lhs = entry.getKey();
-            for (List<String> rhs : entry.getValue()) {
-                if (lhs.equals(izquierda) && rhs.equals(derecha)) {
-                    return index;
-                }
-                index++;
+        for (int i = 0; i < produccionesOrdenadas.size(); i++) {
+            Map.Entry<String, List<String>> prod = produccionesOrdenadas.get(i);
+            if (prod.getKey().equals(izquierda) && prod.getValue().equals(derecha)) {
+                return i;
             }
         }
-        return -1; // no encontrado
+        return -1;
     }
+
 }

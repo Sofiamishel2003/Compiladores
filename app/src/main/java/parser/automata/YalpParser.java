@@ -16,10 +16,14 @@ public class YalpParser {
     public static class ResultadoYalp {
         public final Map<String, List<List<String>>> gramatica;
         public final Set<String> terminales;
+        public final String simboloInicial;
+        public final List<Map.Entry<String, List<String>>> produccionesOrdenadas;
 
-        public ResultadoYalp(Map<String, List<List<String>>> gramatica, Set<String> terminales) {
+        public ResultadoYalp(Map<String, List<List<String>>> gramatica, Set<String> terminales, String simboloInicial, List<Map.Entry<String, List<String>>> produccionesOrdenadas) {
             this.gramatica = gramatica;
             this.terminales = terminales;
+            this.simboloInicial = simboloInicial;
+            this.produccionesOrdenadas = produccionesOrdenadas;
         }
     }
 
@@ -27,7 +31,8 @@ public class YalpParser {
         Map<String, List<List<String>>> gramatica = new LinkedHashMap<>();
         Set<String> terminales = new HashSet<>();
         Set<String> ignorados = new HashSet<>();
-
+        String simboloInicial = null;
+        List<Map.Entry<String, List<String>>> produccionesOrdenadas = new ArrayList<>();
         BufferedReader reader = new BufferedReader(new FileReader(path));
         String linea;
         boolean enProducciones = false;
@@ -67,6 +72,11 @@ public class YalpParser {
                 }
                 String lhs = partes[0].trim();
                 produccionActual = lhs;
+                
+                // Guardar el primer no terminal como símbolo inicial
+                if (simboloInicial == null) {
+                    simboloInicial = lhs;
+                }
 
                 List<List<String>> producciones = new ArrayList<>();
                 StringBuilder rhsBuilder = new StringBuilder(partes[1].trim());
@@ -83,6 +93,7 @@ public class YalpParser {
                 for (String prod : rhsCompleto.split("\\|")) {
                     List<String> simbolos = List.of(prod.trim().split("\\s+"));
                     producciones.add(simbolos);
+                    produccionesOrdenadas.add(Map.entry(lhs, simbolos));
                 }
 
                 gramatica.put(lhs, producciones);
@@ -96,6 +107,7 @@ public class YalpParser {
                 for (String prod : linea.split("\\|")) {
                     List<String> simbolos = List.of(prod.trim().split("\\s+"));
                     lista.add(simbolos);
+                    produccionesOrdenadas.add(Map.entry(produccionActual, simbolos));
                 }
             }
         }
@@ -105,7 +117,7 @@ public class YalpParser {
         // Eliminar los tokens ignorados de los terminales
         terminales.removeAll(ignorados);
 
-        return new ResultadoYalp(gramatica, terminales);
+        return new ResultadoYalp(gramatica, terminales, simboloInicial, produccionesOrdenadas);
     }
 }
 
