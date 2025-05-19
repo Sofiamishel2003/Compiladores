@@ -1,12 +1,6 @@
 package clases;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Lexer {
     private String input;
@@ -176,7 +170,7 @@ public class Lexer {
     }
 
     public static class Token {
-        private String type;
+        public String type;
         private String value;
 
         public Token(String type, String value) {

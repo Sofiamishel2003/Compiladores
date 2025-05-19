@@ -24,4 +24,11 @@ public class Stack<T> {
     public int size() {
         return elements.size();
     }
+    @Override
+    public String toString() {
+        return elements.toString();
+    }
+
+    
 }
+

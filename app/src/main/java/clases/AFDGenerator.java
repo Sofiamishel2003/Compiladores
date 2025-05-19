@@ -395,7 +395,7 @@ public class AFDGenerator {
     
         // Clase Token
         codigo.append("    public static class Token {\n");
-        codigo.append("        private String type;\n");
+        codigo.append("        public String type;\n");
         codigo.append("        private String value;\n\n");
         codigo.append("        public Token(String type, String value) {\n");
         codigo.append("            this.type = type;\n");

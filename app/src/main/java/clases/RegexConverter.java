@@ -190,7 +190,7 @@ public class RegexConverter {
      */
     public static String toPostfix(String infix) {
         infix = preprocessRegex(infix);
-        System.out.println("Preprocessed Regex: " + infix);
+        //System.out.println("Preprocessed Regex: " + infix);
 
         List<String> output = new ArrayList<>();
         Stack<String> stack = new Stack<>();
