@@ -35,11 +35,15 @@ public class ItemLALR {
         betaA.addAll(lookaheads); // a
         return betaA;
     }
-    
+
+    public ItemLALR nucleoSinLookahead() {
+        return new ItemLALR(izquierda, derecha, punto, Set.of());
+    }
+
     public boolean mismoNucleo(ItemLALR otro) {
-        return this.izquierda.equals(otro.izquierda)
-            && this.derecha.equals(otro.derecha)
-            && this.punto == otro.punto;
+        return this.izquierda.equals(otro.izquierda) &&
+            this.derecha.equals(otro.derecha) &&
+            this.punto == otro.punto;
     }
 
     public boolean mismoLookAhead(ItemLALR otro) {

@@ -1,13 +1,31 @@
 package parser;
 
-import clases.*;
-import clases.Stack;
-import parser.automata.*;
-
-import java.io.*;
-import java.nio.file.Paths;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.nio.file.Files;
-import java.util.*;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import clases.AFDGenerator;
+import clases.ASTBuilder;
+import clases.ASTNode;
+import clases.Lexer;
+import clases.RegexConverter;
+import clases.Stack;
+import clases.YalParser;
+import parser.automata.AutomataLALR;
+import parser.automata.AutomataLR0;
+import parser.automata.Estado;
+import parser.automata.EstadoLALR;
+import parser.automata.LALRTableGenerator;
+import parser.automata.LR0TableGenerator;
+import parser.automata.YalpParser;
 
 public class Yapar {
     public static void main(String[] args) throws Exception {

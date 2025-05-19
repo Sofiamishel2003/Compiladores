@@ -14,13 +14,14 @@ public class EstadoLALR {
         this.transiciones = new HashMap<>();
     }
 
-    public Set<String> nucleo() {
-        Set<String> claves = new HashSet<>();
+    public Set<ItemLALR> nucleo() {
+        Set<ItemLALR> claves = new HashSet<>();
         for (ItemLALR item : items) {
-            claves.add(item.nucleo());
+            claves.add(item.nucleoSinLookahead());
         }
         return claves;
     }
+
 
     @Override
     public boolean equals(Object o) {

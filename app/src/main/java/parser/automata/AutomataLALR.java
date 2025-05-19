@@ -25,65 +25,51 @@ public class AutomataLALR {
     }
 
     public Set<ItemLALR> closure(Set<ItemLALR> conjunto, Map<String, Set<String>> first) {
-        Set<ItemLALR> cerrado = new HashSet<>(conjunto);
-        boolean cambiado;
-    
-        do {
-            cambiado = false;
-            Set<ItemLALR> nuevos = new HashSet<>();
-            Set<ItemLALR> itemsParaReemplazar = new HashSet<>();
-            Set<ItemLALR> itemsNuevosFusionados = new HashSet<>();
+    Map<String, ItemLALR> mapa = new HashMap<>();
 
-            for (ItemLALR item : cerrado) {
-                String simbolo = item.simboloDespuesDelPunto();
-                if (simbolo != null && gramatica.containsKey(simbolo)) {
-                     // Calculamos FIRST(βa)
-                    List<String> beta = item.derecha.subList(item.punto + 1, item.derecha.size());
-                    Set<String> lookaheads = new HashSet<>();
+    Queue<ItemLALR> pendientes = new LinkedList<>(conjunto);
+    while (!pendientes.isEmpty()) {
+        ItemLALR actual = pendientes.poll();
 
-                    for (String a : item.lookaheads) {
-                        List<String> betaA = new ArrayList<>(beta);
-                        betaA.add(a);
-                        lookaheads.addAll(GramaticaUtils.firstDeCadenas(betaA, first, terminales));
-                    }
+        String clave = actual.nucleo(); // Izquierda + derecha + punto
+        ItemLALR existente = mapa.get(clave);
 
-                    if (lookaheads.isEmpty()) {
-                        lookaheads = new HashSet<>(item.lookaheads); // fallback
-                    }
+        if (existente == null) {
+            // Nuevo ítem
+            mapa.put(clave, actual);
+        } else {
+            // Fusionar lookaheads
+            Set<String> fusionados = new HashSet<>(existente.lookaheads);
+            if (fusionados.addAll(actual.lookaheads)) {
+                mapa.put(clave, new ItemLALR(existente.izquierda, existente.derecha, existente.punto, fusionados));
+            }
+            continue; // No procesamos expansiones duplicadas
+        }
 
-                    for (List<String> produccion : gramatica.get(simbolo)) {
-                        ItemLALR nuevoItem = new ItemLALR(simbolo, produccion, 0, lookaheads);
-
-                        boolean existe = false;
-                        for (ItemLALR ya : cerrado) {
-                            if (ya.nucleo().equals(nuevoItem.nucleo())) {
-                                if (!ya.lookaheads.containsAll(nuevoItem.lookaheads)) {
-                                    Set<String> nuevosLookaheads = new HashSet<>(ya.lookaheads);
-                                    nuevosLookaheads.addAll(nuevoItem.lookaheads);
-                                    itemsParaReemplazar.add(ya);
-                                    itemsNuevosFusionados.add(new ItemLALR(ya.izquierda, ya.derecha, ya.punto, nuevosLookaheads));
-                                    cambiado = true;
-                                }
-                                existe = true;
-                                break;
-                            }
-                        }
-
-                        if (!existe) {
-                            nuevos.add(nuevoItem);
-                            cambiado = true;
-                        }
-                    }
-                }
+        String simbolo = actual.simboloDespuesDelPunto();
+        if (simbolo != null && gramatica.containsKey(simbolo)) {
+            List<String> beta = actual.derecha.subList(actual.punto + 1, actual.derecha.size());
+            Set<String> lookaheads = new HashSet<>();
+            for (String a : actual.lookaheads) {
+                List<String> betaA = new ArrayList<>(beta);
+                betaA.add(a);
+                lookaheads.addAll(GramaticaUtils.firstDeCadenas(betaA, first, terminales));
             }
 
-            cerrado.removeAll(itemsParaReemplazar);
-            cerrado.addAll(itemsNuevosFusionados);
-            cerrado.addAll(nuevos);
-        } while (cambiado);
-    
-        return cerrado;
-    }    
+            if (lookaheads.isEmpty()) {
+                lookaheads.addAll(actual.lookaheads); // fallback
+            }
+
+            for (List<String> produccion : gramatica.get(simbolo)) {
+                ItemLALR nuevo = new ItemLALR(simbolo, produccion, 0, lookaheads);
+                pendientes.add(nuevo);
+            }
+        }
+    }
+
+    return new HashSet<>(mapa.values());
+}
+   
 
      public Set<ItemLALR> gotoClosure(Set<ItemLALR> items, String simbolo, Map<String, Set<String>> first) {
         Set<ItemLALR> nuevos = new HashSet<>();
@@ -185,6 +171,55 @@ public class AutomataLALR {
         return estados;
     }    
   
+    private boolean sePuedeFusionar(Set<ItemLALR> items1, Set<ItemLALR> items2) {
+        Map<String, Set<String>> mapa1 = mapearNucleoALookaheads(items1);
+        Map<String, Set<String>> mapa2 = mapearNucleoALookaheads(items2);
+
+        if (!mapa1.keySet().equals(mapa2.keySet())) {
+            return false;
+        }
+
+        for (String nucleo : mapa1.keySet()) {
+            Set<String> lookaheads1 = mapa1.get(nucleo);
+            Set<String> lookaheads2 = mapa2.get(nucleo);
+
+            // No deben solaparse con símbolos diferentes
+            Set<String> union = new HashSet<>(lookaheads1);
+            union.addAll(lookaheads2);
+            if (union.size() != lookaheads1.size() + lookaheads2.size()) {
+                return false; // hay solapamiento distinto
+            }
+        }
+
+        return true;
+    }
+
+    private Map<String, Set<String>> mapearNucleoALookaheads(Set<ItemLALR> items) {
+        Map<String, Set<String>> mapa = new HashMap<>();
+        for (ItemLALR item : items) {
+            String clave = item.izquierda + " -> " + String.join(" ", item.derecha) + " • " + item.punto;
+            mapa.computeIfAbsent(clave, k -> new HashSet<>()).addAll(item.lookaheads);
+        }
+        return mapa;
+    }
+
+
+    private Map<String, Integer> contarItemsBase(Set<ItemLALR> items) {
+        Map<String, Set<Set<String>>> grupos = new HashMap<>();
+        for (ItemLALR item : items) {
+            String clave = item.izquierda + " -> " + String.join(" ", item.derecha) + " • " + item.punto;
+            grupos.computeIfAbsent(clave, k -> new HashSet<>()).add(item.lookaheads);
+        }
+
+        Map<String, Integer> conteo = new HashMap<>();
+        for (Map.Entry<String, Set<Set<String>>> entry : grupos.entrySet()) {
+            conteo.put(entry.getKey(), entry.getValue().size());
+        }
+
+        return conteo;
+    }
+
+
     
     public List<EstadoLALR> fusionarLR1paraLALR(List<EstadoLALR> estadosLR1) {
         Map<Set<ItemLALR>, EstadoLALR> mapaNucleos = new HashMap<>();
@@ -205,13 +240,28 @@ public class AutomataLALR {
                 EstadoLALR nuevoEstado = new EstadoLALR(nuevosItems);
                 mapaNucleos.put(nucleo, nuevoEstado);
             } else {
-                // Fusionar lookaheads
-                for (ItemLALR item : estado.items) {
-                    for (ItemLALR itExistente : existente.items) {
-                        if (itExistente.mismoNucleo(item)) {
-                            itExistente.lookaheads.clear();
+                
+                // Eliminar lookaheads
+                if (sePuedeFusionar(estado.items, existente.items)) {
+                    Map<String, Integer> conteo1 = contarItemsBase(estado.items);
+                    Map<String, Integer> conteo2 = contarItemsBase(existente.items);
+                    if (conteo1.equals(conteo2)) {
+                        for (ItemLALR item : estado.items) {
+                            for (ItemLALR itExistente : existente.items) {
+                                if (itExistente.mismoNucleo(item)) {
+                                    itExistente.lookaheads.clear();
+                                }
+                            }
                         }
                     }
+                }
+                else {
+                    Set<ItemLALR> nuevosItems = new HashSet<>();
+                    for (ItemLALR item : estado.items) {
+                        nuevosItems.add(new ItemLALR(item.izquierda, item.derecha, item.punto, new HashSet<>(item.lookaheads)));
+                    }
+                    EstadoLALR nuevoEstado = new EstadoLALR(nuevosItems);
+                    mapaNucleos.put(nucleo, nuevoEstado);
                 }
             }
         }

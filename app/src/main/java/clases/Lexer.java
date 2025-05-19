@@ -136,7 +136,7 @@ public class Lexer {
             if (token != null) {
                 tokens.add(token);
             } else {
-                System.err.println("Error lÃ©xico en posiciÃ³n " + position);
+                System.err.println("Error léxico en posición " + position);
                 position++;
             }
         }
