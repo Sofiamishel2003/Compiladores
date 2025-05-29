@@ -117,7 +117,3 @@ Esto:
 
 ---
 
-
-Los autómatas generados por el compilador se almacenan en los siguientes formatos:
-
-![image](https://github.com/user-attachments/assets/41b3ff19-ce11-4021-a8ad-c64bb058d891)
