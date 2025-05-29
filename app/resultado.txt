@@ -1,32 +1,88 @@
 Cadena: (1+2)*3        
-  Resultado LR(0): ACEPTADA
-  Resultado LALR : RECHAZADA (error en token: PLUS)
----------------------------
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------
 Cadena: 1+2            
-  Resultado LR(0): ACEPTADA
-  Resultado LALR : RECHAZADA (error en token: PLUS)
----------------------------
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------
 Cadena: 9+             
-  Resultado LR(0): RECHAZADA (no se pudo reducir a input antes del fin de cadena)
-  Resultado LALR : RECHAZADA (error en token: PLUS)
----------------------------
+--Resultado LR(0): RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 1
+  Línea: 9+             
+          ^
+--Resultado LALR : RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 1
+  Línea: 9+             
+          ^
+------------------------------------------------------
 Cadena: (5+3           
-  Resultado LR(0): RECHAZADA (no se pudo reducir a input antes del fin de cadena)
-  Resultado LALR : RECHAZADA (error en token: PLUS)
----------------------------
+--Resultado LR(0): RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 3
+  Línea: (5+3           
+            ^
+--Resultado LALR : RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 3
+  Línea: (5+3           
+            ^
+------------------------------------------------------
 Cadena: 4*(2+))        
-  Resultado LR(0): RECHAZADA (error en token: RPAREN)
-  Resultado LALR : RECHAZADA (error en token: TIMES)
----------------------------
+--Resultado LR(0): RECHAZADA--------
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 5
+  Línea: 4*(2+))        
+              ^
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 6
+  Línea: 4*(2+))        
+               ^
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 6
+  Línea: 4*(2+))        
+               ^
+--Resultado LALR : RECHAZADA--------
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 5
+  Línea: 4*(2+))        
+              ^
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 6
+  Línea: 4*(2+))        
+               ^
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 6
+  Línea: 4*(2+))        
+               ^
+------------------------------------------------------
 Cadena: +1             
-  Resultado LR(0): RECHAZADA (error en token: PLUS)
-  Resultado LALR : RECHAZADA (error en token: PLUS)
----------------------------
+--Resultado LR(0): RECHAZADA--------
+   Error gramatical: Token inesperado: 'PLUS'.
+  Posición: índice 0
+  Línea: +1             
+         ^
+--Resultado LALR : RECHAZADA--------
+   Error gramatical: Token inesperado: 'PLUS'.
+  Posición: índice 0
+  Línea: +1             
+         ^
+------------------------------------------------------
 Cadena: (              
-  Resultado LR(0): RECHAZADA (no se pudo reducir a input antes del fin de cadena)
-  Resultado LALR : RECHAZADA (no se pudo reducir a input antes del fin de cadena)
----------------------------
+--Resultado LR(0): RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 0
+  Línea: (              
+         ^
+--Resultado LALR : RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 0
+  Línea: (              
+         ^
+------------------------------------------------------
 Cadena: ((1+2))
-  Resultado LR(0): ACEPTADA
-  Resultado LALR : RECHAZADA (error en token: PLUS)
----------------------------
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------

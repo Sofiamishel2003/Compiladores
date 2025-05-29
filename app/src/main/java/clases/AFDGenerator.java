@@ -359,7 +359,7 @@ public class AFDGenerator {
         codigo.append("            if (token != null) {\n");
         codigo.append("                tokens.add(token);\n");
         codigo.append("            } else {\n");
-        codigo.append("                System.err.println(\"Error léxico en posición \" + position);\n");
+        codigo.append("                // System.err.println(\"Error lexico en posicion \" + position);\n");
         codigo.append("                position++;\n");
         codigo.append("            }\n");
         codigo.append("        }\n");
@@ -388,7 +388,7 @@ public class AFDGenerator {
         codigo.append("        }\n");
         codigo.append("        if (lastAcceptingType != null) {\n");
         codigo.append("            position = lastAcceptingPos;\n");
-        codigo.append("            return new Token(lastAcceptingType, input.substring(start, position));\n");
+        codigo.append("            return new Token(lastAcceptingType, input.substring(start, lastAcceptingPos), start, lastAcceptingPos);\n");
         codigo.append("        }\n");
         codigo.append("        return null;\n");
         codigo.append("    }\n\n");
@@ -396,10 +396,14 @@ public class AFDGenerator {
         // Clase Token
         codigo.append("    public static class Token {\n");
         codigo.append("        public String type;\n");
-        codigo.append("        private String value;\n\n");
-        codigo.append("        public Token(String type, String value) {\n");
+        codigo.append("        private String value;\n");
+        codigo.append("        public int start;\n");
+        codigo.append("        public int end;\n\n");
+        codigo.append("        public Token(String type, String value, int start, int end) {\n");
         codigo.append("            this.type = type;\n");
         codigo.append("            this.value = value;\n");
+        codigo.append("            this.start = start;\n");
+        codigo.append("            this.end = end;\n");
         codigo.append("        }\n\n");
         codigo.append("        @Override\n");
         codigo.append("        public String toString() {\n");

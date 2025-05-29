@@ -134,10 +134,9 @@ public class Lexer {
         while (position < input.length()) {
             Token token = nextToken();
             if (token != null) {
-                System.out.println("token: "+token);
                 tokens.add(token);
             } else {
-                System.err.println("Error léxico en posición " + position);
+                // System.err.println("Error lexico en posicion " + position);
                 position++;
             }
         }
@@ -165,7 +164,7 @@ public class Lexer {
         }
         if (lastAcceptingType != null) {
             position = lastAcceptingPos;
-            return new Token(lastAcceptingType, input.substring(start, position));
+            return new Token(lastAcceptingType, input.substring(start, lastAcceptingPos), start, lastAcceptingPos);
         }
         return null;
     }
@@ -173,10 +172,14 @@ public class Lexer {
     public static class Token {
         public String type;
         private String value;
+        public int start;
+        public int end;
 
-        public Token(String type, String value) {
+        public Token(String type, String value, int start, int end) {
             this.type = type;
             this.value = value;
+            this.start = start;
+            this.end = end;
         }
 
         @Override
