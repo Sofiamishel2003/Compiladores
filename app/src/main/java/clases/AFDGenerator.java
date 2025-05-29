@@ -357,7 +357,6 @@ public class AFDGenerator {
         codigo.append("        while (position < input.length()) {\n");
         codigo.append("            Token token = nextToken();\n");
         codigo.append("            if (token != null) {\n");
-        codigo.append("                System.out.println(\"token: \"+token);\n");
         codigo.append("                tokens.add(token);\n");
         codigo.append("            } else {\n");
         codigo.append("                System.err.println(\"Error léxico en posición \" + position);\n");

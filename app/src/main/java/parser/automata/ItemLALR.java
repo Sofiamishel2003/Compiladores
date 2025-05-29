@@ -67,19 +67,18 @@ public class ItemLALR {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
         if (!(obj instanceof ItemLALR)) return false;
         ItemLALR other = (ItemLALR) obj;
-        return izquierda.equals(other.izquierda)
-            && derecha.equals(other.derecha)
-            && punto == other.punto
-            && lookaheads.equals(other.lookaheads);
+        return izquierda.equals(other.izquierda) &&
+            derecha.equals(other.derecha) &&
+            punto == other.punto; // ⚠️ No incluir lookaheads
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(izquierda, derecha, punto, lookaheads);
+        return Objects.hash(izquierda, derecha, punto); // ⚠️ No incluir lookaheads
     }
+
 
 
     @Override

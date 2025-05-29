@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -72,26 +74,23 @@ public class AutomataLALR {
    
 
      public Set<ItemLALR> gotoClosure(Set<ItemLALR> items, String simbolo, Map<String, Set<String>> first) {
-        Set<ItemLALR> nuevos = new HashSet<>();
-    
+        Set<ItemLALR> avanzados = new HashSet<>();
+
         for (ItemLALR item : items) {
             if (simbolo.equals(item.simboloDespuesDelPunto())) {
-                // Avanza el punto
-                List<String> beta = item.derecha.subList(item.punto + 1, item.derecha.size());
-                List<String> betaA = new ArrayList<>(beta);
-                betaA.addAll(item.lookaheads); // append lookahead symbols for FIRST
-    
-                Set<String> nuevosLookaheads = GramaticaUtils.firstDeCadenas(betaA, first, terminales);
-                if (nuevosLookaheads.isEmpty()) {
-                    nuevosLookaheads = new HashSet<>(item.lookaheads); // fallback si β ⇒ ε
-                }
-    
-                nuevos.add(new ItemLALR(item.izquierda, item.derecha, item.punto + 1, item.lookaheads)); // mantenemos lookaheads aquí
+                ItemLALR nuevo = new ItemLALR(
+                    item.izquierda,
+                    item.derecha,
+                    item.punto + 1,
+                    new HashSet<>(item.lookaheads) // conservar los lookaheads
+                );
+                avanzados.add(nuevo);
             }
         }
-    
-        return closure(nuevos, first);
+
+        return closure(avanzados, first);
     }
+
 
     public List<EstadoLALR> construirAutomataLR1() {
         Map<String, Set<String>> firsts = GramaticaUtils.calcularFirst(gramatica, terminales);
@@ -170,69 +169,20 @@ public class AutomataLALR {
     
         return estados;
     }    
-  
-    private boolean sePuedeFusionar(Set<ItemLALR> items1, Set<ItemLALR> items2) {
-        Map<String, Set<String>> mapa1 = mapearNucleoALookaheads(items1);
-        Map<String, Set<String>> mapa2 = mapearNucleoALookaheads(items2);
-
-        if (!mapa1.keySet().equals(mapa2.keySet())) {
-            return false;
-        }
-
-        for (String nucleo : mapa1.keySet()) {
-            Set<String> lookaheads1 = mapa1.get(nucleo);
-            Set<String> lookaheads2 = mapa2.get(nucleo);
-
-            // No deben solaparse con símbolos diferentes
-            Set<String> union = new HashSet<>(lookaheads1);
-            union.addAll(lookaheads2);
-            if (union.size() != lookaheads1.size() + lookaheads2.size()) {
-                return false; // hay solapamiento distinto
-            }
-        }
-
-        return true;
-    }
-
-    private Map<String, Set<String>> mapearNucleoALookaheads(Set<ItemLALR> items) {
-        Map<String, Set<String>> mapa = new HashMap<>();
-        for (ItemLALR item : items) {
-            String clave = item.izquierda + " -> " + String.join(" ", item.derecha) + " • " + item.punto;
-            mapa.computeIfAbsent(clave, k -> new HashSet<>()).addAll(item.lookaheads);
-        }
-        return mapa;
-    }
-
-
-    private Map<String, Integer> contarItemsBase(Set<ItemLALR> items) {
-        Map<String, Set<Set<String>>> grupos = new HashMap<>();
-        for (ItemLALR item : items) {
-            String clave = item.izquierda + " -> " + String.join(" ", item.derecha) + " • " + item.punto;
-            grupos.computeIfAbsent(clave, k -> new HashSet<>()).add(item.lookaheads);
-        }
-
-        Map<String, Integer> conteo = new HashMap<>();
-        for (Map.Entry<String, Set<Set<String>>> entry : grupos.entrySet()) {
-            conteo.put(entry.getKey(), entry.getValue().size());
-        }
-
-        return conteo;
-    }
-
-
     
     public List<EstadoLALR> fusionarLR1paraLALR(List<EstadoLALR> estadosLR1) {
-        Map<Set<ItemLALR>, EstadoLALR> mapaNucleos = new HashMap<>();
+        // Usamos LinkedHashMap para preservar el orden de inserción
+        Map<Set<ItemLALR>, EstadoLALR> mapaNucleos = new LinkedHashMap<>();
 
         for (EstadoLALR estado : estadosLR1) {
             // Extraer núcleo (sin lookaheads)
             Set<ItemLALR> nucleo = estado.items.stream()
                 .map(item -> new ItemLALR(item.izquierda, item.derecha, item.punto, Set.of()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new)); // Orden estable
 
             EstadoLALR existente = mapaNucleos.get(nucleo);
             if (existente == null) {
-                // Clonar items con lookaheads
+                // Crear nuevo estado con ítems y lookaheads
                 Set<ItemLALR> nuevosItems = new HashSet<>();
                 for (ItemLALR item : estado.items) {
                     nuevosItems.add(new ItemLALR(item.izquierda, item.derecha, item.punto, new HashSet<>(item.lookaheads)));
@@ -240,19 +190,27 @@ public class AutomataLALR {
                 EstadoLALR nuevoEstado = new EstadoLALR(nuevosItems);
                 mapaNucleos.put(nucleo, nuevoEstado);
             } else {
+                // Fusionar lookaheads
                 for (ItemLALR item : estado.items) {
+                    boolean encontrado = false;
                     for (ItemLALR itExistente : existente.items) {
                         if (itExistente.mismoNucleo(item)) {
-                            itExistente.lookaheads.clear();
-                            //itExistente.lookaheads.addAll(item.lookaheads);
+                            itExistente.lookaheads.addAll(item.lookaheads);
+                            encontrado = true;
+                            break;
                         }
+                    }
+                    if (!encontrado) {
+                        existente.items.add(new ItemLALR(item.izquierda, item.derecha, item.punto, new HashSet<>(item.lookaheads)));
                     }
                 }
             }
         }
 
-        // Reconstruir transiciones
+        // Construimos la lista de estados fusionados
         List<EstadoLALR> nuevosEstados = new ArrayList<>(mapaNucleos.values());
+
+        // Reconstruir transiciones entre los nuevos estados
         for (EstadoLALR original : estadosLR1) {
             EstadoLALR fusionadoOrigen = encontrarEstadoFusionado(original, nuevosEstados);
             for (Map.Entry<String, EstadoLALR> trans : original.transiciones.entrySet()) {
@@ -270,19 +228,18 @@ public class AutomataLALR {
         Set<ItemLALR> nucleo = original.items.stream()
             .map(item -> new ItemLALR(item.izquierda, item.derecha, item.punto, Set.of()))
             .collect(Collectors.toSet());
-    
+
         for (EstadoLALR est : fusionados) {
             Set<ItemLALR> nucleoEst = est.items.stream()
                 .map(item -> new ItemLALR(item.izquierda, item.derecha, item.punto, Set.of()))
                 .collect(Collectors.toSet());
-    
+
             if (nucleoEst.equals(nucleo)) {
                 return est;
             }
         }
         return null;
     }
-    
 
     public static void exportarADotLALR(List<EstadoLALR> estados, String rutaArchivo) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(rutaArchivo));
@@ -312,6 +269,140 @@ public class AutomataLALR {
         writer.write("}\n");
         writer.close();
     }
+
+    public static class EntradaTabla {
+        public enum Tipo { SHIFT, REDUCE, ACCEPT }
+
+        private Tipo tipo;
+        private int estadoDestino; // para SHIFT
+        private String produccionIzq; // para REDUCE
+        private List<String> produccionDer; // para REDUCE
+
+
+        // Constructor para SHIFT
+        public EntradaTabla(Tipo tipo, int estadoDestino) {
+            this.tipo = tipo;
+            this.estadoDestino = estadoDestino;
+        }
+
+        // Constructor para REDUCE
+        public EntradaTabla(Tipo tipo, String produccionIzq, List<String> produccionDer) {
+            this.tipo = tipo;
+            this.produccionIzq = produccionIzq;
+            this.produccionDer = produccionDer;
+        }
+
+        // Constructor para ACCEPT
+        public EntradaTabla(Tipo tipo) {
+            this.tipo = tipo;
+        }
+
+        public Tipo getTipo() {
+            return tipo;
+        }
+
+        public int getEstadoDestino() {
+            return estadoDestino;
+        }
+
+        public String getProduccionIzq() {
+            return produccionIzq;
+        }
+
+        public List<String> getProduccionDer() {
+            return produccionDer;
+        }
+
+        @Override
+        public String toString() {
+            if (tipo == Tipo.SHIFT) {
+                return "s" + estadoDestino;
+            } else if (tipo == Tipo.REDUCE) {
+                return "r(" + produccionIzq + " → " + String.join(" ", produccionDer) + ")";
+            } else if (tipo == Tipo.ACCEPT) {
+                return "acc";
+            } else {
+                return "";
+            }
+        }
+
+    }
+
+    public static class TablaAnalisis {
+        public final Map<Integer, Map<String, EntradaTabla>> action = new HashMap<>();
+        public final Map<Integer, Map<String, Integer>> goTo = new HashMap<>();
+
+        public void imprimir() {
+            System.out.println("ACTION:");
+            for (var fila : action.entrySet()) {
+                System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
+            }
+            System.out.println("GOTO:");
+            for (var fila : goTo.entrySet()) {
+                System.out.println("Estado " + fila.getKey() + ": " + fila.getValue());
+            }
+        }
+    }
+
+    public TablaAnalisis generarTablaAnalisis(List<EstadoLALR> estados) {
+        TablaAnalisis tabla = new TablaAnalisis();
+
+        for (int i = 0; i < estados.size(); i++) {
+            EstadoLALR estado = estados.get(i);
+            tabla.action.put(i, new HashMap<>());
+            tabla.goTo.put(i, new HashMap<>());
+
+            for (ItemLALR item : estado.items) {
+                String simbolo = item.simboloDespuesDelPunto();
+
+                if (simbolo != null) {
+                    // SHIFT o GOTO
+                    EstadoLALR destino = estado.transiciones.get(simbolo);
+                    if (destino == null) continue;
+
+                    int j = estados.indexOf(destino);
+
+                    if (terminales.contains(simbolo)) {
+                        EntradaTabla nuevaEntrada = new EntradaTabla(EntradaTabla.Tipo.SHIFT, j);
+                        EntradaTabla anterior = tabla.action.get(i).putIfAbsent(simbolo, nuevaEntrada);
+
+                        if (anterior != null && !anterior.equals(nuevaEntrada)) {
+                            System.err.printf("Conflicto SHIFT/REDUCE en estado %d con símbolo '%s': %s vs %s%n", i, simbolo, anterior, nuevaEntrada);
+                        }
+
+                    } else {
+                        // GOTO
+                        tabla.goTo.get(i).put(simbolo, j);
+                    }
+
+                } else if (!item.izquierda.equals("S'")) {
+                    // REDUCE
+                    for (String lookahead : item.lookaheads) {
+                        EntradaTabla nuevaEntrada = new EntradaTabla(EntradaTabla.Tipo.REDUCE, item.izquierda, item.derecha);
+                        EntradaTabla anterior = tabla.action.get(i).putIfAbsent(lookahead, nuevaEntrada);
+
+                        if (anterior != null && !anterior.equals(nuevaEntrada)) {
+                            System.err.printf("Conflicto REDUCE/REDUCE o SHIFT/REDUCE en estado %d con lookahead '%s': %s vs %s%n", i, lookahead, anterior, nuevaEntrada);
+                        }
+                    }
+
+                } else {
+                    // ACCEPT
+                    if (item.lookaheads.contains("EOF")) {
+                        EntradaTabla nuevaEntrada = new EntradaTabla(EntradaTabla.Tipo.ACCEPT);
+                        EntradaTabla anterior = tabla.action.get(i).putIfAbsent("EOF", nuevaEntrada);
+
+                        if (anterior != null && !anterior.equals(nuevaEntrada)) {
+                            System.err.printf("Conflicto con ACCEPT en estado %d: %s vs %s%n", i, anterior, nuevaEntrada);
+                        }
+                    }
+                }
+            }
+        }
+
+        return tabla;
+    }
+
 
 }
 

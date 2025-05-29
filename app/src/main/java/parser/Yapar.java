@@ -20,10 +20,10 @@ import clases.RegexConverter;
 import clases.Stack;
 import clases.YalParser;
 import parser.automata.AutomataLALR;
+import parser.automata.AutomataLALR.EntradaTabla;
 import parser.automata.AutomataLR0;
 import parser.automata.Estado;
 import parser.automata.EstadoLALR;
-import parser.automata.LALRTableGenerator;
 import parser.automata.LR0TableGenerator;
 import parser.automata.YalpParser;
 
@@ -105,17 +105,12 @@ public class Yapar {
         List<EstadoLALR> estadosLALR = lalr.fusionarLR1paraLALR(estadosLR1);
         AutomataLALR.exportarADotLALR(estadosLALR, "src/main/java/parser/automataLALR.dot");
 
-        LALRTableGenerator generadorTablaLALR = new LALRTableGenerator(gramatica);
-        LALRTableGenerator.ParsingTable tablaLALR = generadorTablaLALR.generarTabla(estadosLALR, terminales, noTerminales);
+        AutomataLALR.TablaAnalisis tablaLALR = lalr.generarTablaAnalisis(estadosLALR);
+        tablaLALR.imprimir();
+
         
-        System.out.println("Tabla LALR:");
-        for (var entry : tablaLALR.action.entrySet()) {
-            int state = entry.getKey();
-            for (var sym : entry.getValue().keySet()) {
-                String act = entry.getValue().get(sym);
-                System.out.printf("  Estado %d, símbolo %s → %s%n", state, sym, act);
-            }
-        }
+        
+        
 
         List<String> cadenas = Files.readAllLines(Paths.get("cadenas.txt"));
 
@@ -196,11 +191,11 @@ public class Yapar {
         return "ACEPTADA";
     }
     private static String analizarCadenaLALR(
-        String entrada,
-        Map<Integer, Map<String, String>> actionTable,
-        Map<Integer, Map<String, Integer>> gotoTable,
-        Map<String, List<List<String>>> gramatica,
-        List<Map.Entry<String, List<String>>> listaProducciones) {
+            String entrada,
+            Map<Integer, Map<String, EntradaTabla>> actionTable,
+            Map<Integer, Map<String, Integer>> gotoTable,
+            Map<String, List<List<String>>> gramatica,
+            List<Map.Entry<String, List<String>>> listaProducciones) {
 
         Lexer lexer = new Lexer(entrada + "\u0000");
         List<String> tokens = new ArrayList<>();
@@ -211,6 +206,8 @@ public class Yapar {
         }
         tokens.add("EOF");
 
+        System.out.println("🧾 Tokens: " + tokens);
+
         Stack<Integer> stack = new Stack<>();
         stack.push(0);
         int i = 0;
@@ -218,37 +215,35 @@ public class Yapar {
         while (i < tokens.size()) {
             int state = stack.peek();
             String token = tokens.get(i);
-            String action = actionTable.getOrDefault(state, Collections.emptyMap()).get(token);
+            EntradaTabla entradaTabla = actionTable.getOrDefault(state, Collections.emptyMap()).get(token);
 
-            if (action == null) {
+            System.out.println("\n🔎 Estado actual: " + state);
+            System.out.println("🔸 Token actual: " + token);
+            System.out.println("📖 Acción: " + entradaTabla);
+
+            if (entradaTabla == null) {
                 if (token.equals("EOF")) {
                     return "RECHAZADA (no se pudo reducir a input antes del fin de cadena)";
                 }
                 return "RECHAZADA (error en token: " + token + ")";
             }
 
-            if (action.equals("accept")) {
+            if (entradaTabla.getTipo() == EntradaTabla.Tipo.ACCEPT) {
                 return "ACEPTADA";
             }
 
-            if (action.startsWith("s")) {
-                int nextState = Integer.parseInt(action.substring(1));
+            if (entradaTabla.getTipo() == EntradaTabla.Tipo.SHIFT) {
+                int nextState = entradaTabla.getEstadoDestino();
+                System.out.println("➡️ Shift a estado: " + nextState);
                 stack.push(nextState);
                 i++;
-            } else if (action.startsWith("r")) {
-                int prodNum = Integer.parseInt(action.substring(1));
-                if (prodNum >= listaProducciones.size()) {
-                    return "RECHAZADA (producción inválida)";
-                }
-
-                Map.Entry<String, List<String>> prod = listaProducciones.get(prodNum);
-                String lhs = prod.getKey();
-                List<String> rhs = prod.getValue();
+            } else if (entradaTabla.getTipo() == EntradaTabla.Tipo.REDUCE) {
+                String lhs = entradaTabla.getProduccionIzq();
+                List<String> rhs = entradaTabla.getProduccionDer();
 
                 System.out.println("⏬ Reducción: " + lhs + " -> " + rhs);
                 System.out.println("📦 Pila antes de reducción: " + stack);
 
-                // Verificación de pila
                 if (stack.size() < rhs.size()) {
                     return "RECHAZADA (pila insuficiente para reducción: " + lhs + ")";
                 }
@@ -271,11 +266,15 @@ public class Yapar {
                 stack.push(next);
                 System.out.println("📦 Pila después de reducción: " + stack);
             } else {
-                return "RECHAZADA (acción inválida: " + action + ")";
+                return "RECHAZADA (acción inválida)";
             }
+
+            System.out.println("📦 Pila tras acción: " + stack);
+            System.out.println("------------------------");
         }
 
         return "ACEPTADA";
     }
+
 
 }
