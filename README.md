@@ -117,17 +117,6 @@ Esto:
 
 ---
 
-## 📌 Autoría
-
-Proyecto desarrollado como parte del curso de Compiladores. Incluye generación de errores detallados con posicionamiento y punteros visuales en el reporte.
-
----
-
-```
-
-¿Deseas que lo genere como archivo para descarga directa (`README.md`) o lo copias y pegas en tu repositorio?
-```
-
 
 Los autómatas generados por el compilador se almacenan en los siguientes formatos:
 
