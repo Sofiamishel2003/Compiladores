@@ -100,12 +100,39 @@ Esto:
 * Escribe los resultados y errores en `resultado.txt`
 
 ---
+### 6. Crear imagenes de los autómatas ya con el archivo.dot
+Desde la raiz del proyecto Compiladores
+```bash
+ cd \app\src\main\java
+```
+Luego se generan las imagenes con:
+```bash
+  dot -Tpng parser/automata.dot -o parser/automata.png
+  dot -Tpng parser/automataLR1.dot -o parser/automataLR1.png
+  dot -Tpng parser/automataLALR.dot -o parser/automataLALR.png
+```
+Y se esperan resulatados así: 
+- *Autómata LR0*
+  ![image](https://github.com/user-attachments/assets/1fae3822-6a64-4d36-9433-dc5658433e42)
 
-## 📦 Requisitos
+- *Autómata LALR*
+  ![image](https://github.com/user-attachments/assets/edff4d49-b9c2-4569-a769-b34b5b2bd7b7)
 
-* Java 11 o superior
-* Editor recomendado: Visual Studio Code (con soporte para Java y Gradle)
-* Gradle (opcional, si deseas automatizar la compilación)
+## 🔧 Tecnologías y Lenguajes
+
+- Java (JDK 17+ recomendado)
+- Graphviz (opcional, para visualización del AFD en `.dot` y `.png`)
+  
+---
+
+## Pre-Requisito
+### Windows
+1. Descargar Graphviz en este link: https://graphviz.org/download/ 
+2. Agregar el /bin a las variables de entorno y reiniciar la computadora
+### MAC
+```java
+brew install graphviz 
+```
 
 ---
 
