@@ -295,8 +295,8 @@ public class AFDGenerator {
         codigo.append("    private String input;\n");
         codigo.append("    private int position;\n");
         codigo.append("    private static final Map<Set<Integer>, Map<String, Set<Integer>>> transitionTable = new HashMap<>();\n");
-        codigo.append("    private static final Map<Set<Integer>, String> finalStates = new HashMap<>();\n\n");
-    
+        codigo.append("    private static final Map<Set<Integer>, String> finalStates = new HashMap<>();\n");
+        codigo.append("    public List<parser.Yapar.ErrorDetalle> erroresLexicos = new ArrayList<>();\n\n");
         codigo.append("    private static final Set<Integer> startState = new HashSet<>(Arrays.asList(")
             .append(startState.toString().replaceAll("[\\[\\]]", ""))
             .append("));\n\n");
@@ -359,7 +359,15 @@ public class AFDGenerator {
         codigo.append("            if (token != null) {\n");
         codigo.append("                tokens.add(token);\n");
         codigo.append("            } else {\n");
-        codigo.append("                // System.err.println(\"Error lexico en posicion \" + position);\n");
+        codigo.append("                char invalidChar = input.charAt(position);\n");
+        codigo.append("                if (invalidChar != '\\u0000' && !Character.isWhitespace(invalidChar)) {\n");
+        codigo.append("                    erroresLexicos.add(new parser.Yapar.ErrorDetalle(\n");
+        codigo.append("                        \"léxico\",\n");
+        codigo.append("                        position,\n");
+        codigo.append("                        String.valueOf(invalidChar),\n");
+        codigo.append("                        \"Carácter no reconocido: '\" + invalidChar + \"'\"\n");
+        codigo.append("                    ));\n");
+        codigo.append("                 }\n");
         codigo.append("                position++;\n");
         codigo.append("            }\n");
         codigo.append("        }\n");

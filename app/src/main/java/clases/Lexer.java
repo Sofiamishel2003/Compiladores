@@ -7,6 +7,7 @@ public class Lexer {
     private int position;
     private static final Map<Set<Integer>, Map<String, Set<Integer>>> transitionTable = new HashMap<>();
     private static final Map<Set<Integer>, String> finalStates = new HashMap<>();
+    public List<parser.Yapar.ErrorDetalle> erroresLexicos = new ArrayList<>();
 
     private static final Set<Integer> startState = new HashSet<>(Arrays.asList(32, 1, 2, 34, 3, 36, 5, 38, 7, 8, 40, 9, 10, 42, 11, 12, 13, 14, 15, 16, 28, 30));
 
@@ -136,7 +137,15 @@ public class Lexer {
             if (token != null) {
                 tokens.add(token);
             } else {
-                // System.err.println("Error lexico en posicion " + position);
+                char invalidChar = input.charAt(position);
+                if (invalidChar != '\u0000' && !Character.isWhitespace(invalidChar)) {
+                    erroresLexicos.add(new parser.Yapar.ErrorDetalle(
+                        "léxico",
+                        position,
+                        String.valueOf(invalidChar),
+                        "Carácter no reconocido: '" + invalidChar + "'"
+                    ));
+                 }
                 position++;
             }
         }

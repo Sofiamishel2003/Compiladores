@@ -151,6 +151,9 @@ public class Yapar {
                 out.write("Cadena: " + entrada + "\n");
                 errores = new ArrayList<>(); // Reiniciar errores por cadena
                 erroresLr0 = new ArrayList<>(); // Reiniciar errores por cadena
+                Lexer lexerTemporal = new Lexer(entrada + "\u0000");
+                lexerTemporal.tokenize(); // Solo para capturar errores léxicos
+
                 String resultadoLR0 = analizarCadenaLR0(entrada, tablaLR0.action, tablaLR0.goTo, gramatica, listaProducciones);
                 String resultadoLALR = analizarCadenaLALR(entrada, tablaLALR.action, tablaLALR.goTo, gramatica, listaProducciones);
                 // - Imprime resultados y errores
@@ -162,6 +165,12 @@ public class Yapar {
                 for (ErrorDetalle err : errores) {
                     out.write(err.formatoLinea(entrada) + "\n");
                 }
+                if (!lexerTemporal.erroresLexicos.isEmpty()) {
+                    out.write("--Errores léxicos-------------------\n");
+                    for (ErrorDetalle err : lexerTemporal.erroresLexicos) {
+                        out.write(err.formatoLinea(entrada) + "\n");
+                    }
+                }
                 out.write("------------------------------------------------------\n");
             }
         }
@@ -171,7 +180,7 @@ public class Yapar {
     // ────────────────────────────────
     //  Manejo de errores
     // ────────────────────────────────
-    private static class ErrorDetalle {
+    public static class ErrorDetalle {
         String tipo; // "léxico", "sintáctico", "gramatical"
         int posicion;
         String token;
@@ -370,7 +379,7 @@ public class Yapar {
                 }
                 errores.add(new ErrorDetalle(tipo, errorPos, token, desc));
                 huboError = true;
-                i++; // ⚠️ avanzar al siguiente token para continuar análisis
+                i++; //  avanzar al siguiente token para continuar análisis
                 continue; // intentar detectar más errores
 
                 
