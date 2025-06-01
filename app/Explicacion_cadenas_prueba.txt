@@ -1,0 +1,29 @@
+# Errores Sintácticos (producción incompleta, mal balanceo) 
+9+               // falta operando a la derecha
+(5+3             // falta paréntesis de cierre
++1               // operador sin operando izquierdo
+(                // paréntesis abierto sin cerrar
+()               // vacío, no cumple ninguna producción
+((1+2)           // falta paréntesis final
+3+*2             // operador inesperado
+(1+2))           // paréntesis de cierre extra
+1+(2+3           // producción incompleta
+(1+2)+(          // término incompleto después de '+'
+
+# Errores Gramaticales (símbolos mal posicionados)
+1++2             // dos operadores seguidos
+1+2)             // paréntesis de cierre sin apertura
+(1+)+2           // operador sin operando en el medio
+((1+2)+3))       // cierre extra
+4*(2+))          // múltiples errores: paréntesis extra y cierre sin apertura
+
+# Errores Léxicos (caracteres inválidos para el lexer)
+1a+2             // 'a' es un carácter inválido
+(1+2]            // ']' no está definido como token válido
+3 + 5$2          // '$' es inválido
+@3+4             // '@' no es parte del alfabeto definido
+
+# Casos Limítrofes o Curiosos
+((((((((1))))))))         // muchos paréntesis, bien balanceados
+(((((1+2)*((3+4))))))     // mezcla profunda con paréntesis
+()()()                    // vacío repetido: gramaticalmente inválido si no hay producción para ε

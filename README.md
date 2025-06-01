@@ -1,10 +1,122 @@
-## 📌 Descripción General
+# 🛠️ Compilador en Java: YALex + YAPar
 
-Este proyecto implementa una herramienta completa de análisis léxico, que emula el funcionamiento de herramientas como **Yalex**, utilizando expresiones regulares para definir tokens y generando un **AFD (Autómata Finito Determinista)** directamente desde estas expresiones.
+Este proyecto implementa un compilador en Java que incluye análisis léxico (YALex) y análisis sintáctico (YAPar), con soporte para generación de AFD, parsing LR(0) y LALR(1), y visualización de errores.
 
-El sistema toma expresiones regulares (con una sintaxis estilo Yalex), las convierte en postfix, construye un árbol sintáctico abstracto (AST), calcula los conjuntos `firstpos`, `lastpos`, `followpos`, y finalmente genera un lexer en Java que reconoce los tokens definidos.
+## 📁 Estructura del Proyecto
+
+```markdown
+
+Compiladores/
+├── app/
+│   └── src/
+│       └── main/
+│           └── java/
+│               ├── clases/
+|                    ├── AFDGenerator.java
+|                    ├── ASTBuilder.java
+|                    ├── ASTNode.java
+|                    ├── Lexer.java
+|                    ├── RegexConverter.java
+|                    ├── Stack.java
+|                    ├── Symbol.java
+|                    └── YalParser.java
+│               ├── parser/
+|                    ├── automata/
+|                        ├── AutomataLALR.java
+|                        ├── AutomataLR(0).java
+|                        ├── Estado.java
+|                        ├── EstadoLALR.java
+|                        ├── Item.java
+|                        ├── ItemLALR.java
+|                        ├── LALRTableGenerator.java
+|                        ├── LR0TableGenerator.java
+|                        ├── NucleoEstado.java
+|                        └── YalpParser.java
+|                    ├── utils/
+|                        └── GramaticaUtils.java
+|                    ├── automata.dot
+|                    ├── automataLALR.dot
+|                    ├── automataLR1.dot
+|                    └── Yapar.java
+│               └── Main.java
+├── cadenas.txt
+├── lexer.yal
+├── parser.yalp
+├── resultado.txt
+├── build.gradle
+├── README.md
+└── ...
+
+````
+
+- `lexer.yal`: archivo con definiciones léxicas
+- `parser.yalp`: archivo con la gramática
+- `cadenas.txt`: cadenas de prueba para validar
+- `resultado.txt`: salida con los análisis de errores LR(0) y LALR
+- `app/src/main/java/`: contiene el código fuente
 
 ---
+
+## ▶️ Instrucciones para compilar y ejecutar
+
+### 1. Posicionarse en la raíz del proyecto
+
+```bash
+cd Compiladores
+````
+
+### 2. Ir a la carpeta con el código fuente
+
+```bash
+cd app/src/main/java
+```
+
+### 3. Compilar todos los archivos
+
+```bash
+javac parser/Yapar.java parser/*.java parser/automata/*.java parser/utils/*.java clases/*.java
+```
+
+> Esto generará todos los autómatas y clases necesarias para el compilador, incluyendo `Lexer.java` y las tablas LR(0)/LALR(1).
+
+### 4. Regresar a la raíz
+
+```bash
+cd ../../..
+```
+
+### 5. Ejecutar YAPar con los archivos fuente
+
+```bash
+java -cp src/main/java parser.Yapar parser.yalp -l lexer.yal -o theparser
+```
+
+Esto:
+
+* Lee `lexer.yal` y `parser.yalp`
+* Construye el AFD del lexer
+* Genera autómatas LR(0) y LALR(1)
+* Analiza las cadenas de `cadenas.txt`
+* Escribe los resultados y errores en `resultado.txt`
+
+---
+### 6. Crear imagenes de los autómatas ya con el archivo.dot
+Desde la raiz del proyecto Compiladores
+```bash
+ cd \app\src\main\java
+```
+Luego se generan las imagenes con:
+```bash
+  dot -Tpng parser/automata.dot -o parser/automata.png
+  dot -Tpng parser/automataLR1.dot -o parser/automataLR1.png
+  dot -Tpng parser/automataLALR.dot -o parser/automataLALR.png
+```
+Y se esperan resulatados así: 
+- *Autómata LR0*
+  ![image](https://github.com/user-attachments/assets/1fae3822-6a64-4d36-9433-dc5658433e42)
+
+- *Autómata LALR*
+  ![image](https://github.com/user-attachments/assets/edff4d49-b9c2-4569-a769-b34b5b2bd7b7)
 
 ## 🔧 Tecnologías y Lenguajes
 
@@ -21,88 +133,14 @@ El sistema toma expresiones regulares (con una sintaxis estilo Yalex), las convi
 ```java
 brew install graphviz 
 ```
----
-
-
-## 🔄 Flujo del Programa
-
-1. **Lectura del archivo `.yal`**  
-   `YalParser` lee y convierte las definiciones de tokens a postfix.
-
-2. **Conversión de Regex → Postfix**  
-   Usando `RegexConverter`, se aplica el algoritmo de Shunting Yard.
-
-3. **Construcción del AST**  
-   `ASTBuilder` construye un árbol sintáctico, usando nodos con `firstpos`, `lastpos`, y `nullable`.
-
-4. **Cálculo de Followpos**  
-   Se procesan los nodos `^` (concatenación) y `*` para definir transiciones futuras.
-
-5. **Construcción del AFD**  
-   `AFDGenerator` transforma los conjuntos `followpos` en un autómata completo determinista.
-
-6. **Generación del archivo `Lexer.java`**  
-   Se genera código Java que representa el lexer, incluyendo la tabla de transiciones y estados finales.
-
-7. **Prueba del lexer**  
-   Se prueba con una cadena de entrada como `"1+2"` para validar el funcionamiento del analizador léxico.
 
 ---
 
-## 🧪 Ejecución y Pruebas
+## 🧠 Consideraciones
 
-### Paso 1: Ajustar el `path` al archivo `.yal`
-
-En `Main.java`, asegúrate de colocar la ruta correcta del archivo `lexer.yal`:
-
-```java
-String rutaArchivo = "C:\\ruta\\completa\\lexer.yal";
-```
-
-### Paso 2: Ejecutar `Main.java`
-
-Este archivo generará:
-
-- El autómata `.dot` en `/media/other/`
-- La imagen `.png` del autómata en `/media/img/`
-- El archivo `Lexer.java` generado a partir del AFD
-
-### Paso 3: Probar el Lexer
-
-Edita la línea del `Main.java` con el input que desees:
-
-```java
-Lexer lexer = new Lexer("1+2");
-System.out.println(lexer.tokenize());
-```
-
-### Resultado Esperado:
-
-```bash
-[NUM: "1"]
-[PLUS: "+"]
-[NUM: "2"]
-```
+* El archivo `lexer.yal` contiene las reglas léxicas en una sintaxis personalizada.
+* `parser.yalp` define la gramática en formato BNF simplificado.
+* Puedes editar estos archivos en la raíz para probar nuevas reglas o cadenas.
 
 ---
 
-## ✅ Características Implementadas
-
-- Soporte completo para expresiones regulares con:
-  - Concatenación (`^`)
-  - Alternancia (`|`)
-  - Cerradura de Kleene (`*`)
-  - Caracteres escapados (`\n`, `\t`, `\u0000`)
-- Tokens con identificadores como `NUM`, `PLUS`, `MINUS`, `LPAREN`, `RPAREN`, etc.
-- AFD representado como estructura de transiciones (DFA)
-- Exportación del lexer como archivo `.java` compilable
-- Simulación completa del lexer
-- Generación de gráficas en Graphviz
-
----
-
-## 📸 Visualización de Autómatas
-
-Los autómatas generados por el compilador se almacenan en los siguientes formatos:
-
-![image](https://github.com/user-attachments/assets/41b3ff19-ce11-4021-a8ad-c64bb058d891)

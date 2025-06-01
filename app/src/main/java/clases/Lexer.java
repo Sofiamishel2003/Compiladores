@@ -1,18 +1,13 @@
 package clases;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Lexer {
     private String input;
     private int position;
     private static final Map<Set<Integer>, Map<String, Set<Integer>>> transitionTable = new HashMap<>();
     private static final Map<Set<Integer>, String> finalStates = new HashMap<>();
+    public List<parser.Yapar.ErrorDetalle> erroresLexicos = new ArrayList<>();
 
     private static final Set<Integer> startState = new HashSet<>(Arrays.asList(32, 1, 2, 34, 3, 36, 5, 38, 7, 8, 40, 9, 10, 42, 11, 12, 13, 14, 15, 16, 28, 30));
 
@@ -142,7 +137,15 @@ public class Lexer {
             if (token != null) {
                 tokens.add(token);
             } else {
-                System.err.println("Error léxico en posición " + position);
+                char invalidChar = input.charAt(position);
+                if (invalidChar != '\u0000' && !Character.isWhitespace(invalidChar)) {
+                    erroresLexicos.add(new parser.Yapar.ErrorDetalle(
+                        "léxico",
+                        position,
+                        String.valueOf(invalidChar),
+                        "Carácter no reconocido: '" + invalidChar + "'"
+                    ));
+                 }
                 position++;
             }
         }
@@ -170,18 +173,22 @@ public class Lexer {
         }
         if (lastAcceptingType != null) {
             position = lastAcceptingPos;
-            return new Token(lastAcceptingType, input.substring(start, position));
+            return new Token(lastAcceptingType, input.substring(start, lastAcceptingPos), start, lastAcceptingPos);
         }
         return null;
     }
 
     public static class Token {
-        private String type;
+        public String type;
         private String value;
+        public int start;
+        public int end;
 
-        public Token(String type, String value) {
+        public Token(String type, String value, int start, int end) {
             this.type = type;
             this.value = value;
+            this.start = start;
+            this.end = end;
         }
 
         @Override

@@ -1,0 +1,118 @@
+Cadena: (1+2)*3    
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------
+Cadena: 1+2         
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------
+Cadena: 9+        
+--Resultado LR(0): RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 1
+  Línea: 9+        
+          ^
+--Resultado LALR : RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 1
+  Línea: 9+        
+          ^
+------------------------------------------------------
+Cadena: (5+3       
+--Resultado LR(0): RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 3
+  Línea: (5+3       
+            ^
+--Resultado LALR : RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 3
+  Línea: (5+3       
+            ^
+------------------------------------------------------
+Cadena: 4*(2+))    
+--Resultado LR(0): RECHAZADA--------
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 5
+  Línea: 4*(2+))    
+              ^
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 6
+  Línea: 4*(2+))    
+               ^
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 6
+  Línea: 4*(2+))    
+               ^
+--Resultado LALR : RECHAZADA--------
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 5
+  Línea: 4*(2+))    
+              ^
+   Error gramatical: Token inesperado: 'RPAREN'.
+  Posición: índice 6
+  Línea: 4*(2+))    
+               ^
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 6
+  Línea: 4*(2+))    
+               ^
+------------------------------------------------------
+Cadena: +1         
+--Resultado LR(0): RECHAZADA--------
+   Error gramatical: Token inesperado: 'PLUS'.
+  Posición: índice 0
+  Línea: +1         
+         ^
+--Resultado LALR : RECHAZADA--------
+   Error gramatical: Token inesperado: 'PLUS'.
+  Posición: índice 0
+  Línea: +1         
+         ^
+------------------------------------------------------
+Cadena: (          
+--Resultado LR(0): RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 0
+  Línea: (          
+         ^
+--Resultado LALR : RECHAZADA--------
+   Error sintáctico: Faltan elementos para completar la producción.
+  Posición: índice 0
+  Línea: (          
+         ^
+------------------------------------------------------
+Cadena: ((1+2))
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------
+Cadena: (((((1+2)*((3+4))))))
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+------------------------------------------------------
+Cadena: @3+4
+--Resultado LR(0): ACEPTADA--------
+--Resultado LALR : ACEPTADA--------
+--Errores léxicos-------------------
+   Error léxico: Carácter no reconocido: '@'
+  Posición: índice 0
+  Línea: @3+4
+         ^
+------------------------------------------------------
+Cadena: 3 + 5$2
+--Resultado LR(0): RECHAZADA--------
+   Error gramatical: Token inesperado: 'NUM'.
+  Posición: índice 6
+  Línea: 3 + 5$2
+               ^
+--Resultado LALR : RECHAZADA--------
+   Error gramatical: Token inesperado: 'NUM'.
+  Posición: índice 6
+  Línea: 3 + 5$2
+               ^
+--Errores léxicos-------------------
+   Error léxico: Carácter no reconocido: '$'
+  Posición: índice 5
+  Línea: 3 + 5$2
+              ^
+------------------------------------------------------
