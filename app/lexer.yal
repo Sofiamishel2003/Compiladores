@@ -2,14 +2,19 @@
 import myToken;
 }
 
+let digit = ['0'-'9']
+let letter = ['a'-'z' 'A'-'Z']
+let ident = letter (letter | digit)*
+
 rule getToken =
-    [' ' '\t']        { return "WHITESPACE"; } // Saltar espacios
+    [' ' '\t']       { return "WHITESPACE"; }
   | ['\n']           { return "EOL"; }
-  | ['0'-'9']+       { return "NUM"; }
+  | digit+           { return "NUM"; }
   | '+'              { return "PLUS"; }
   | '-'              { return "MINUS"; }
   | '*'              { return "TIMES"; }
   | '/'              { return "DIV"; }
   | '('              { return "LPAREN"; }
   | ')'              { return "RPAREN"; }
+  | ident            { return "IDENT"; }
   | eof              { return "EOF"; }

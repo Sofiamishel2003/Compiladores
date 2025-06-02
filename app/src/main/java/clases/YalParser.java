@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.regex.*;
 
 public class YalParser {
+
     public static class Rule {
         public String regex;
         public String action;
@@ -24,6 +25,18 @@ public class YalParser {
     private final Map<String, String> definitions = new HashMap<>();
     private String headerCode = "";
     private String trailerCode = "";
+
+    private String expandDefinition(String key, Set<String> visited) {
+        if (!definitions.containsKey(key) || visited.contains(key)) {
+            return key;
+        }
+        visited.add(key);
+        String expanded = definitions.get(key);
+        for (String subKey : definitions.keySet()) {
+            expanded = expanded.replaceAll("\\b" + subKey + "\\b", "(" + expandDefinition(subKey, visited) + ")");
+        }
+        return expanded;
+    }
 
     private String handleEscapedChars(String input) {
         StringBuilder result = new StringBuilder();
@@ -79,7 +92,8 @@ public class YalParser {
 
             Pattern letPattern = Pattern.compile("let\\s+(\\w+)\\s*=\\s*(.+)");
             Pattern rulePattern = Pattern
-                    .compile("((?:\\[[^\\]]*\\]|\\w+|[+*()/'\\\\\\-]+)+)\\s*\\{\\s*return\\s*\"(\\w+)\";\\s*\\}");
+                    .compile(
+                            "((?:\\[[^\\]]*\\]|\\w+|[+*()/'\\\\\\\\\\-]+)+)\\s*\\{\\s*return\\s*\\\"(\\w+)\\\";\\s*\\}");
 
             while ((line = br.readLine()) != null) {
                 line = line.trim();
@@ -115,8 +129,9 @@ public class YalParser {
                         String rawRegex = matcher.group(1);
                         String action = matcher.group(2);
 
-                        for (Map.Entry<String, String> def : definitions.entrySet()) {
-                            rawRegex = rawRegex.replaceAll("\\b" + def.getKey() + "\\b", "(" + def.getValue() + ")");
+                        for (String defKey : definitions.keySet()) {
+                            String expanded = expandDefinition(defKey, new HashSet<>());
+                            rawRegex = rawRegex.replaceAll("\\b" + defKey + "\\b", "(" + expanded + ")");
                         }
 
                         String processedRegex = handleEscapedChars(rawRegex);
