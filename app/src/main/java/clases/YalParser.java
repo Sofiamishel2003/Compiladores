@@ -1,12 +1,8 @@
 package clases;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.io.*;
+import java.util.*;
+import java.util.regex.*;
 
 public class YalParser {
     public static class Rule {
@@ -25,110 +21,138 @@ public class YalParser {
     }
 
     private final List<Rule> rules = new ArrayList<>();
+    private final Map<String, String> definitions = new HashMap<>();
+    private String headerCode = "";
+    private String trailerCode = "";
 
     private String handleEscapedChars(String input) {
         StringBuilder result = new StringBuilder();
-        boolean insideBrackets = false;   // Rastrea si estamos dentro de [ ]
-        boolean afterGroupOrSet = false;  // Rastrea si estamos después de ] o )
-    
+        boolean insideBrackets = false;
+        boolean afterGroupOrSet = false;
+
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
-    
-            // Detectar inicio y fin de un conjunto [ ]
+
             if (c == '[') {
                 insideBrackets = true;
             } else if (c == ']') {
                 insideBrackets = false;
-                afterGroupOrSet = true; // Estamos después de un conjunto
+                afterGroupOrSet = true;
             }
-    
-            // Detectar fin de un grupo ( )
+
             if (c == ')') {
-                afterGroupOrSet = true; // Estamos después de un grupo
+                afterGroupOrSet = true;
             }
-    
-            // Reemplazar "eof" por \u0000
+
             if (input.startsWith("eof", i)) {
                 result.append("\\u0000");
-                i += 2; // Saltar "of"
+                i += 2;
                 continue;
             }
-    
-            // Escapar caracteres especiales si no estamos dentro de un conjunto [ ]
+
             if (!insideBrackets) {
-                // Siempre escapar estos caracteres: ( ) / -
                 if ("()/-".indexOf(c) != -1) {
                     result.append("\\");
-                }
-                // Escapar + o * solo si NO están después de ] o )
-                else if ((c == '+' || c == '*') && !afterGroupOrSet) {
+                } else if ((c == '+' || c == '*') && !afterGroupOrSet) {
                     result.append("\\");
                 }
             }
-    
-            // No añadir comillas simples
+
             if (c != '\'') {
                 result.append(c);
             }
-    
-            // Restablecer el estado después de cualquier carácter que no sea cuantificador
+
             if (afterGroupOrSet && (c == '+' || c == '*')) {
                 afterGroupOrSet = false;
             }
         }
-    
+
         return result.toString();
-    }        
+    }
 
     public List<Rule> parseYAL(String filepath) throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(filepath))) {
             String line;
-            boolean inRuleSection = false;
+            boolean inHeader = false, inTrailer = false, inRules = false;
+            StringBuilder header = new StringBuilder();
+            StringBuilder trailer = new StringBuilder();
 
-            // Mejorado para detectar listas y rangos
-            Pattern pattern = Pattern.compile("((?:\\[[^\\]]*\\]|[a-zA-Z0-9+*/()\\\\'\\-]+|eof)+)\\s*\\{\\s*return\\s*\"(\\w+)\";\\s*\\}");
+            Pattern letPattern = Pattern.compile("let\\s+(\\w+)\\s*=\\s*(.+)");
+            Pattern rulePattern = Pattern
+                    .compile("((?:\\[[^\\]]*\\]|\\w+|[+*()/'\\\\\\-]+)+)\\s*\\{\\s*return\\s*\"(\\w+)\";\\s*\\}");
 
             while ((line = br.readLine()) != null) {
                 line = line.trim();
-                if (line.startsWith("rule")) {
-                    inRuleSection = true; // Comenzamos a procesar las reglas
-                } else if (inRuleSection) {
-                    Matcher matcher = pattern.matcher(line);
+
+                if (line.equals("{") && !inRules) {
+                    inHeader = true;
+                    continue;
+                } else if (line.equals("}") && inHeader) {
+                    inHeader = false;
+                    continue;
+                } else if (line.equals("{") && inRules) {
+                    inTrailer = true;
+                    continue;
+                } else if (line.equals("}") && inTrailer) {
+                    inTrailer = false;
+                    continue;
+                }
+
+                if (inHeader) {
+                    header.append(line).append("\n");
+                } else if (inTrailer) {
+                    trailer.append(line).append("\n");
+                } else if (line.startsWith("let ")) {
+                    Matcher m = letPattern.matcher(line);
+                    if (m.find()) {
+                        definitions.put(m.group(1), m.group(2));
+                    }
+                } else if (line.startsWith("rule")) {
+                    inRules = true;
+                } else if (inRules) {
+                    Matcher matcher = rulePattern.matcher(line);
                     if (matcher.find()) {
                         String rawRegex = matcher.group(1);
                         String action = matcher.group(2);
 
-                        // Manejar caracteres escapados
-                        String processedRegex = handleEscapedChars(rawRegex);
+                        for (Map.Entry<String, String> def : definitions.entrySet()) {
+                            rawRegex = rawRegex.replaceAll("\\b" + def.getKey() + "\\b", "(" + def.getValue() + ")");
+                        }
 
+                        String processedRegex = handleEscapedChars(rawRegex);
                         rules.add(new Rule(processedRegex, action));
                     }
                 }
             }
+
+            headerCode = header.toString();
+            trailerCode = trailer.toString();
         }
+
         return rules;
     }
 
-    // Combina todas las reglas en una sola regex con el dummy token
+    public String getHeaderCode() {
+        return headerCode;
+    }
+
+    public String getTrailerCode() {
+        return trailerCode;
+    }
+
     public String combineRegex() {
         StringBuilder combinedRegex = new StringBuilder();
         int index = 1;
 
         for (Rule rule : rules) {
             if (combinedRegex.length() > 0) {
-                combinedRegex.append("|"); // Separador de regex
+                combinedRegex.append("|");
             }
             combinedRegex.append("(").append(rule.regex).append(")#").append(index);
             index++;
         }
 
-        // Dummy token (\u0000)
         combinedRegex.append("|(\\u0000)#0");
         return combinedRegex.toString();
     }
 }
-
-
-
-
-
