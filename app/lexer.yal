@@ -2,13 +2,13 @@
 import java.util.HashMap;
 }
 
-let digit = ['0'-'9']
+let digit = ['0'-'9']+
 let letter = ['a'-'z' 'A'-'Z']
 let ident = letter (letter | digit)*
 
 rule getToken =
-    ' '          { return "WHITESPACE"; }
-  | '\n'         { return "EOL"; }
+    [' ' '\t']   { return "WHITESPACE"; } // Saltar espacios
+  | ['\n']       { return "EOL"; }
   | digit+       { return "NUM"; }
   | ident        { return "ID"; }
   | '+'          { return "PLUS"; }
