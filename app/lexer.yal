@@ -1,26 +1,15 @@
 {
-import java.util.HashMap;
+import myToken;
 }
-
-let digit = ['0'-'9']+
-let letter = ['a'-'z' 'A'-'Z']
-let ident = letter (letter | digit)*
 
 rule getToken =
-    [' ' '\t']   { return "WHITESPACE"; } // Saltar espacios
-  | ['\n']       { return "EOL"; }
-  | digit+       { return "NUM"; }
-  | ident        { return "ID"; }
-  | '+'          { return "PLUS"; }
-  | '-'          { return "MINUS"; }
-  | '*'          { return "TIMES"; }
-  | '/'          { return "DIV"; }
-  | '('          { return "LPAREN"; }
-  | ')'          { return "RPAREN"; }
-  | eof          { return "EOF"; }
-
-{
-public static void helper() {
-    System.out.println("Este es un método auxiliar en el trailer.");
-}
-}
+    [' ' '\t']        { return "WHITESPACE"; } // Saltar espacios
+  | ['\n']           { return "EOL"; }
+  | ['0'-'9']+       { return "NUM"; }
+  | '+'              { return "PLUS"; }
+  | '-'              { return "MINUS"; }
+  | '*'              { return "TIMES"; }
+  | '/'              { return "DIV"; }
+  | '('              { return "LPAREN"; }
+  | ')'              { return "RPAREN"; }
+  | eof              { return "EOF"; }
