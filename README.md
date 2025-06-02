@@ -99,6 +99,29 @@ Esto:
 * Analiza las cadenas de `cadenas.txt`
 * Escribe los resultados y errores en `resultado.txt`
 
+#### resultado.txt
+Los resultados de las cadenas cómo: 
+```markdown
+(1+2)*3    
+1+2         
+9+        
+(5+3       
+4*(2+))    
++1         
+(          
+((1+2))
+(((((1+2)*((3+4))))))
+@3+4
+3 + 5$2
+````
+
+Deberían devolver resultados cómo estos: 
+Indicando errores léxicos, rechazando las cadenas con errores grámaticales y sintácticos
+![image](https://github.com/user-attachments/assets/35cdcd11-0750-4284-96e1-bc4e454ad147)
+![image](https://github.com/user-attachments/assets/db927654-11ed-4ad0-8943-6a7eed324ad6)
+Indicando los errores léxicos pero no rechazando la cadena por ellos
+![image](https://github.com/user-attachments/assets/b71b778f-1863-401c-8468-e93f4a20e226)
+
 ---
 ### 6. Crear imagenes de los autómatas ya con el archivo.dot
 Desde la raiz del proyecto Compiladores
@@ -117,6 +140,7 @@ Y se esperan resulatados así:
 
 - *Autómata LALR*
   ![image](https://github.com/user-attachments/assets/edff4d49-b9c2-4569-a769-b34b5b2bd7b7)
+
 
 ## 🔧 Tecnologías y Lenguajes
 
