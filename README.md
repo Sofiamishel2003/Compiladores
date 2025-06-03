@@ -136,7 +136,7 @@ Luego se generan las imagenes con:
 ```
 Y se esperan resulatados así: 
 - *Autómata LR0*
-  ![image](https://github.com/user-attachments/assets/1fae3822-6a64-4d36-9433-dc5658433e42)
+  ![image](https://github.com/user-attachments/assets/a414f6c3-6d66-47a2-bae6-7f222c15f80d)
 
 - *Autómata LALR*
   ![image](https://github.com/user-attachments/assets/edff4d49-b9c2-4569-a769-b34b5b2bd7b7)
