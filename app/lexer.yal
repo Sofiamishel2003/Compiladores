@@ -2,19 +2,14 @@
 import myToken;
 }
 
-let digit = ['0'-'9']
-let letter = ['a'-'z' 'A'-'Z']
-let ident = letter (letter | digit)*
-
 rule getToken =
-    [' ' '\t']       { return "WHITESPACE"; }
+    [' ' '\t']        { return "WHITESPACE"; } // Saltar espacios
   | ['\n']           { return "EOL"; }
-  | digit+           { return "NUM"; }
+  | ['0'-'9']+       { return "NUM"; }
   | '+'              { return "PLUS"; }
   | '-'              { return "MINUS"; }
   | '*'              { return "TIMES"; }
   | '/'              { return "DIV"; }
   | '('              { return "LPAREN"; }
   | ')'              { return "RPAREN"; }
-  | ident            { return "IDENT"; }
   | eof              { return "EOF"; }
